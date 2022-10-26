@@ -5,7 +5,7 @@ use crate::array2d::{Array2D, Coord};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cell {
 	Empty,
-	Snake(usize),
+	Snake(u32),
 	Food,
 }
 
@@ -23,22 +23,20 @@ pub enum SnakeResult {
 }
 
 pub struct SnakeWorld {
-	snake_length: usize,
+	snake_length: u32,
 	head_coord: Coord,
 	cells: Array2D<Cell>,
 }
 
 impl SnakeWorld {
 	pub fn new(size: usize) -> Self {
-		let snake_length = 1;
-		let starting_iteration = 0;
 		let mut cells = Array2D::new(size, Cell::Empty);
 
 		let head_coord = Coord::new(size / 2, size / 2);
-		cells.set(head_coord, Cell::Snake(starting_iteration));
+		cells.set(head_coord, Cell::Snake(0));
 
 		let mut world = Self {
-			snake_length,
+			snake_length: 5,
 			head_coord,
 			cells,
 		};
@@ -76,9 +74,9 @@ impl SnakeWorld {
 			}
 
 			Some(Cell::Food) => {
-				self.snake_length += 1;
+				self.snake_length += 3;
 
-				if self.snake_length == self.cells.count() {
+				if self.snake_length as usize == self.cells.count() {
 					SnakeResult::Finished
 				} else {
 					self.head_coord = new_head_coord;
@@ -97,7 +95,7 @@ impl SnakeWorld {
 			for y in 0..self.cells.size() {
 				let coord = Coord::new(x, y);
 				if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
-					if *iteration > 0 as usize {
+					if *iteration > 0 {
 						self.cells.set(coord, Cell::Snake(iteration-1));
 					} else {
 						self.cells.set(coord, Cell::Empty);
@@ -109,7 +107,7 @@ impl SnakeWorld {
 
 	fn find_random_valid_food_coord(&self) -> Option<Coord> {
 		//TODO: If there are only a few empty cells, form an array of them instead and pick from that
-		if self.snake_length == self.cells.count() {
+		if self.snake_length as usize == self.cells.count() {
 			return None;
 		}
 
