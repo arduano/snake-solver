@@ -3,8 +3,10 @@ mod snake;
 
 use eframe::egui::{self, Sense};
 
+const GRID_SIZE: i32 = 100;
+
 fn main() {
-	let width: f32 = 100.0 * 10.0 + 20.0;
+	let width: f32 = GRID_SIZE as f32 * 10.0 + 20.0;
 	let options = eframe::NativeOptions {
 		min_window_size: Some(egui::vec2(width, width)),
 		..Default::default()
@@ -24,7 +26,7 @@ struct MyApp {
 impl Default for MyApp {
 	fn default() -> Self {
 		Self {
-			snake_world: snake::SnakeWorld::new(100),
+			snake_world: snake::SnakeWorld::new(GRID_SIZE as usize),
 		}
 	}
 }
