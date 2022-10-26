@@ -23,7 +23,6 @@ pub enum SnakeResult {
 }
 
 pub struct SnakeWorld {
-	iteration: usize,
 	snake_length: usize,
 	head_coord: Coord,
 	cells: Array2D<Cell>,
@@ -39,7 +38,6 @@ impl SnakeWorld {
 		cells.set(head_coord, Cell::Snake(starting_iteration));
 
 		let mut world = Self {
-			iteration: starting_iteration,
 			snake_length,
 			head_coord,
 			cells,
@@ -71,7 +69,6 @@ impl SnakeWorld {
 			Some(Cell::Snake(_)) => SnakeResult::Killed,
 
 			Some(Cell::Empty) => {
-				self.iteration += 1;
 				self.head_coord = new_head_coord;
 				self.cells.set(new_head_coord, Cell::Snake(self.snake_length));
 				self.cull_tail();
@@ -79,7 +76,6 @@ impl SnakeWorld {
 			}
 
 			Some(Cell::Food) => {
-				self.iteration += 1;
 				self.snake_length += 1;
 
 				if self.snake_length == self.cells.count() {
