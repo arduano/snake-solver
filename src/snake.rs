@@ -5,7 +5,7 @@ use crate::array2d::{Array2D, Coord};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cell {
 	Empty,
-	Snake(u32),
+	Snake(usize),
 	Food,
 }
 
@@ -23,7 +23,7 @@ pub enum SnakeResult {
 }
 
 pub struct SnakeWorld {
-	iteration: u32,
+	iteration: usize,
 	snake_length: usize,
 	head_coord: Coord,
 	cells: Array2D<Cell>,
@@ -73,7 +73,7 @@ impl SnakeWorld {
 			Some(Cell::Empty) => {
 				self.iteration += 1;
 				self.head_coord = new_head_coord;
-				self.cells.set(new_head_coord, Cell::Snake(self.iteration));
+				self.cells.set(new_head_coord, Cell::Snake(self.snake_length));
 				self.cull_tail();
 				SnakeResult::Stepped
 			}
@@ -86,7 +86,7 @@ impl SnakeWorld {
 					SnakeResult::Finished
 				} else {
 					self.head_coord = new_head_coord;
-					self.cells.set(new_head_coord, Cell::Snake(self.iteration));
+					self.cells.set(new_head_coord, Cell::Snake(self.snake_length));
 					self.cull_tail();
 					self.spawn_food();
 					SnakeResult::Stepped
@@ -101,7 +101,9 @@ impl SnakeWorld {
 			for y in 0..self.cells.size() {
 				let coord = Coord::new(x, y);
 				if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
-					if self.iteration - iteration >= self.snake_length as u32 {
+					if *iteration > 0 as usize {
+						self.cells.set(coord, Cell::Snake(iteration-1));
+					} else {
 						self.cells.set(coord, Cell::Empty);
 					}
 				}
