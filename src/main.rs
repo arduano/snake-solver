@@ -4,7 +4,12 @@ mod snake;
 use eframe::egui::{self, Sense};
 
 fn main() {
-	let options = eframe::NativeOptions::default();
+	let width: f32 = 100.0 * 10.0 + 20.0;
+	let options = eframe::NativeOptions {
+		min_window_size: Some(egui::vec2(width, width)),
+		..Default::default()
+	};
+
 	eframe::run_native(
 		"My egui App",
 		options,
@@ -19,7 +24,7 @@ struct MyApp {
 impl Default for MyApp {
 	fn default() -> Self {
 		Self {
-			snake_world: snake::SnakeWorld::new(200),
+			snake_world: snake::SnakeWorld::new(100),
 		}
 	}
 }
