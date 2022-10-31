@@ -15,7 +15,7 @@ fn main() {
     };
 
     eframe::run_native(
-        "Manual snake game",
+        "Auto snake game",
         options,
         Box::new(|_cc| Box::new(MyApp::default())),
     );
