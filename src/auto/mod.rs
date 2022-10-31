@@ -8,10 +8,17 @@ use crate::{
     solvers::SnakeSolver,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutoPlayerState {
+    Playing,
+    Finished,
+    Killed,
+}
+
 pub struct AutoSnakePlayer<S: SnakeSolver> {
     world: SnakeWorld,
     current_path: Path,
-    ended: bool,
+    state: AutoPlayerState,
     _s: PhantomData<S>,
 }
 
@@ -22,14 +29,16 @@ impl<S: SnakeSolver> AutoSnakePlayer<S> {
         Self {
             world,
             current_path: initial_path,
-            ended: false,
+            state: AutoPlayerState::Playing,
             _s: PhantomData,
         }
     }
 
     pub fn step(&mut self) -> SnakeResult {
-        if self.ended {
+        if self.state == AutoPlayerState::Finished {
             return SnakeResult::Finished;
+        } else if self.state == AutoPlayerState::Killed {
+            return SnakeResult::Killed;
         }
 
         let next_step = loop {
@@ -46,7 +55,9 @@ impl<S: SnakeSolver> AutoSnakePlayer<S> {
         let result = self.world.step_snake(next_step);
 
         if result == SnakeResult::Finished {
-            self.ended = true;
+            self.state = AutoPlayerState::Finished;
+        } else if result == SnakeResult::Killed {
+            self.state = AutoPlayerState::Killed;
         }
 
         result
@@ -54,6 +65,10 @@ impl<S: SnakeSolver> AutoSnakePlayer<S> {
 
     pub fn world(&self) -> &SnakeWorld {
         &self.world
+    }
+
+    pub fn state(&self) -> AutoPlayerState {
+        self.state
     }
 
     pub fn current_path(&self) -> &Path {

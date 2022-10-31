@@ -1,8 +1,13 @@
-use snake_solver::{auto::AutoSnakePlayer, solvers::basic::BasicSnakeSolver, ui::SnakeWorldViewer};
+use snake_solver::{
+    auto::{AutoPlayerState, AutoSnakePlayer},
+    solvers::{basic::BasicSnakeSolver, SnakeSolver},
+    ui::SnakeWorldViewer,
+};
 
 use eframe::egui::{self};
 
 const GRID_SIZE: i32 = 80;
+type CurrentSnakeSolver = BasicSnakeSolver;
 
 fn main() {
     let width: f32 = GRID_SIZE as f32 * 10.0 + 20.0;
@@ -17,16 +22,16 @@ fn main() {
     eframe::run_native(
         "Auto snake game",
         options,
-        Box::new(|_cc| Box::new(MyApp::default())),
+        Box::new(|_cc| Box::new(MyApp::<CurrentSnakeSolver>::default())),
     );
 }
 
-struct MyApp {
-    world: AutoSnakePlayer<BasicSnakeSolver>,
+struct MyApp<SS: SnakeSolver> {
+    world: AutoSnakePlayer<SS>,
     speed: u32,
 }
 
-impl Default for MyApp {
+impl<SS: SnakeSolver> Default for MyApp<SS> {
     fn default() -> Self {
         Self {
             world: AutoSnakePlayer::new(GRID_SIZE as usize),
@@ -35,17 +40,27 @@ impl Default for MyApp {
     }
 }
 
-impl eframe::App for MyApp {
+impl<SS: SnakeSolver> eframe::App for MyApp<SS> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add(
-                SnakeWorldViewer::new(&self.world.world())
-                    .with_path_overlay(self.world.current_path()),
-            );
+            match self.world.state() {
+                AutoPlayerState::Playing => {
+                    ui.add(
+                        SnakeWorldViewer::new(&self.world.world())
+                            .with_path_overlay(self.world.current_path()),
+                    );
+                }
+                AutoPlayerState::Finished => {
+                    ui.heading("Finished");
+                }
+                AutoPlayerState::Killed => {
+                    ui.heading("Killed");
+                }
+            }
 
             ui.horizontal(|ui| {
                 ui.label("Speed");
-                ui.add(egui::Slider::new(&mut self.speed, 1..=10000).text("speed"));
+                ui.add(egui::Slider::new(&mut self.speed, 1..=10000));
             });
 
             for _ in 0..self.speed {
