@@ -13,6 +13,7 @@ pub enum Cell {
     Food,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     Up,
     Down,
@@ -20,6 +21,7 @@ pub enum Direction {
     Right,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SnakeResult {
     Stepped,
     Killed,
@@ -75,15 +77,15 @@ impl SnakeWorld {
             Some(Cell::Food) => {
                 self.snake_length += 3;
 
-                if self.snake_length as usize == self.cells.count() {
-                    SnakeResult::Finished
-                } else {
-                    self.head_coord = new_head_coord;
-                    self.cells
-                        .set(new_head_coord, Cell::Snake(self.snake_length));
-                    self.cull_tail();
-                    self.spawn_food();
+                self.head_coord = new_head_coord;
+                self.cells
+                    .set(new_head_coord, Cell::Snake(self.snake_length));
+                self.cull_tail();
+
+                if self.spawn_food() {
                     SnakeResult::Stepped
+                } else {
+                    SnakeResult::Finished
                 }
             }
         }
@@ -106,35 +108,58 @@ impl SnakeWorld {
     }
 
     fn find_random_valid_food_coord(&self) -> Option<Coord> {
-        //TODO: If there are only a few empty cells, form an array of them instead and pick from that
-        if self.snake_length as usize == self.cells.count() {
-            return None;
-        }
-
-        let mut rng = rand::thread_rng();
-        let mut coord = Coord::new_usize(
-            rng.gen_range(0..self.cells.size()),
-            rng.gen_range(0..self.cells.size()),
-        );
-
-        while self.cells.get(coord) != Some(&Cell::Empty) {
-            coord = Coord::new_usize(
+        if (self.snake_length as usize) < self.cells.count() * 8 / 7 {
+            // If more than an eighth of the grid is empty, randomly probe until empty cell found
+            let mut rng = rand::thread_rng();
+            let mut coord = Coord::new_usize(
                 rng.gen_range(0..self.cells.size()),
                 rng.gen_range(0..self.cells.size()),
             );
-        }
 
-        Some(coord)
+            while self.cells.get(coord) != Some(&Cell::Empty) {
+                coord = Coord::new_usize(
+                    rng.gen_range(0..self.cells.size()),
+                    rng.gen_range(0..self.cells.size()),
+                );
+            }
+
+            Some(coord)
+        } else {
+            // If less than an eighth of the grid is empty, iterate through all cells until empty cell found
+            let mut cells = Vec::new();
+            for x in 0..self.cells.size() {
+                for y in 0..self.cells.size() {
+                    let coord = Coord::new_usize(x, y);
+                    if self.cells.get(coord) == Some(&Cell::Empty) {
+                        cells.push(coord);
+                    }
+                }
+            }
+
+            if cells.is_empty() {
+                None
+            } else {
+                let mut rng = rand::thread_rng();
+                Some(cells[rng.gen_range(0..cells.len())])
+            }
+        }
     }
 
-    fn spawn_food(&mut self) {
+    fn spawn_food(&mut self) -> bool {
         if let Some(coord) = self.find_random_valid_food_coord() {
             self.cells.set(coord, Cell::Food);
+            true
+        } else {
+            false
         }
     }
 
     pub fn get_cell(&self, coord: Coord) -> Option<&Cell> {
         self.cells.get(coord)
+    }
+
+    pub fn snake_head_coord(&self) -> Coord {
+        self.head_coord
     }
 
     pub fn size(&self) -> usize {

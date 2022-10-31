@@ -1,3 +1,5 @@
+use crate::snake::Direction;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Coord {
     pub x: i32,
@@ -32,20 +34,33 @@ impl Offset {
         Self(Coord::new_i32(x, y))
     }
 
+    pub fn zero() -> Self {
+        Self::new(0, 0)
+    }
+
     pub fn up() -> Self {
-        Self(Coord::new_i32(0, -1))
+        Self::new(0, -1)
     }
 
     pub fn down() -> Self {
-        Self(Coord::new_i32(0, 1))
+        Self::new(0, 1)
     }
 
     pub fn left() -> Self {
-        Self(Coord::new_i32(-1, 0))
+        Self::new(-1, 0)
     }
 
     pub fn right() -> Self {
-        Self(Coord::new_i32(1, 0))
+        Self::new(1, 0)
+    }
+
+    pub fn from_direction(dir: Direction) -> Self {
+        match dir {
+            Direction::Up => Self::up(),
+            Direction::Down => Self::down(),
+            Direction::Left => Self::left(),
+            Direction::Right => Self::right(),
+        }
     }
 
     fn add_offset(&self, offset: Offset) -> Self {
