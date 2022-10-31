@@ -108,7 +108,7 @@ impl SnakeWorld {
     }
 
     fn find_random_valid_food_coord(&self) -> Option<Coord> {
-        if (self.snake_length as usize) < self.cells.count() * 8 / 7 {
+        if (self.snake_length as usize) < self.cells.count() * 7 / 8 {
             // If more than an eighth of the grid is empty, randomly probe until empty cell found
             let mut rng = rand::thread_rng();
             let mut coord = Coord::new_usize(
