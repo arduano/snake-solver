@@ -130,28 +130,23 @@ impl Widget for SnakeWorldViewer<'_> {
 			for x in 0..bools_edges_grid.size() {
 				for y in 0..bools_edges_grid.size() {
 					let coord = Coord::new_usize(x, y);
-					for dir in Direction::each() {
-						// let offset = Offset::from_direction(dir);
-						// let other_coord = coord + offset;
-
-						// if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
-						// 	let start = get_coord_vec2(coord);
-						// 	let end = get_coord_vec2(other_coord);
-						// 	painter.add(egui::Shape::line_segment(
-						// 		[start, end],
-						// 		egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 255)),
-						// 	));
-						// }
-
+					for dir in [Direction::Right, Direction::Down].into_iter() {
 						if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
 							let start = coord + Offset::from_direction(dir);
-							let end = start + Offset::from_direction(dir.rotate_right());
+
+							let next_dir = match dir {
+								Direction::Right => dir.rotate_right(),
+								Direction::Down => dir.rotate_left(),
+								_ => unreachable!(),
+							};
+
+							let end = start + Offset::from_direction(next_dir);
 
 							let start = get_coord_vec2(start);
 							let end = get_coord_vec2(end);
 							painter.add(egui::Shape::line_segment(
 								[start, end],
-								egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 255, 255)),
+								egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 255)),
 							));
 						}
 					}
