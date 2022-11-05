@@ -79,7 +79,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		// Mark the start point for the spanning tree
 		let start = Coord::new_i32(food.x - (food.x % 2) + 1, food.y - (food.y % 2) + 1);
-		println!("{},{}", start.x, start.y);
 		visited.push(start);
 
 		// has not reached all vertexes
