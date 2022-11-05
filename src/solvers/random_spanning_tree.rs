@@ -46,36 +46,27 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 				continue;
 			}
 
-			for off_x in 0..=1 {
-				for off_y in 0..=1 {
-					if off_x == 0 && off_y == 0 {
-						continue;
-					}
-					if off_x == 1 && off_y == 1 {
-						continue;
-					}
-
-					// Unable to reach B
-					let t = Coord::new_usize(x + off_x, y + off_y);
-					if check_obstruction(world, t, world.snake_head_coord()) {
-						continue;
-					}
-
-					// Is location A valid?
-					let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
-					if check_obstruction(world, b, world.snake_head_coord()) {
-						continue;
-					}
-
-					// distance from food as percentage
-					// let dist = food.get_offset(t).length() as f32 / world.size() as f32;
-
-					edges.push(Edge {
-						a,
-						b,
-						weight: rand::random::<f32>(),
-					});
+			for (off_x, off_y) in [(0, 1), (1, 0)] {
+				// Unable to reach B
+				let t = Coord::new_usize(x + off_x, y + off_y);
+				if check_obstruction(world, t, world.snake_head_coord()) {
+					continue;
 				}
+
+				// Is location A valid?
+				let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
+				if check_obstruction(world, b, world.snake_head_coord()) {
+					continue;
+				}
+
+				// distance from food as percentage
+				// let dist = food.get_offset(t).length() as f32 / world.size() as f32;
+
+				edges.push(Edge {
+					a,
+					b,
+					weight: rand::random::<f32>(),
+				});
 			}
 		}
 	}
