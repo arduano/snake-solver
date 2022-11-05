@@ -24,7 +24,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		let mut current_coord = world.snake_head_coord();
 
-		let mut totalVertexes = 0; // number of nodes in the network
+		let mut total_vertexes = 0; // number of nodes in the network
 
 		// Create a random directed graph of edges
 		let mut edges = Vec::<Edge>::new();
@@ -37,16 +37,16 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					continue;
 				}
 
-				let mut hasConnection = false;
-				for offX in 0..1 {
-					for offY in 0..1 {
-						let tween = Coord::new_usize(x + offX, y + offY);
+				let mut has_connection = false;
+				for off_x in 0..1 {
+					for off_y in 0..1 {
+						let tween = Coord::new_usize(x + off_x, y + off_y);
 						// Skip invalid path
 						if check_obstruction(world, tween) {
 							continue;
 						}
 
-						let b = Coord::new_usize(x + offX * 2, y + offY * 2);
+						let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
 
 						// Skip invalid locations
 						if check_obstruction(world, b) {
@@ -58,13 +58,13 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 							b,
 							weight: rand::random(),
 						});
-						hasConnection = true;
-						totalVertexes += 1;
+						has_connection = true;
+						total_vertexes += 1;
 					}
 				}
 
-				if hasConnection {
-					totalVertexes += 1;
+				if has_connection {
+					total_vertexes += 1;
 				}
 			}
 		}
@@ -77,35 +77,50 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		let mut tree = Vec::<Edge>::new();
 
-		// has not reached all vertexs
+		// has not reached all vertexes
 		// & has not ran out of possible connections
-		while tree.len() + 1 < totalVertexes && edges.len() > 0 {
+		let mut updated = true;
+		while updated {
+			updated = false;
+
 			let mut i = 0;
+			println!("{} {} {}", tree.len(), visited.len(), edges.len());
 			while i < edges.len() {
 				let edge = &edges[i];
-				let hasA = visited.contains(&edge.a);
-				let hasB = visited.contains(&edge.b);
+				let has_a = visited.contains(&edge.a);
+				let has_b = visited.contains(&edge.b);
 
 				// If the connection between these two nodes already exists
 				// Remove this option as a shorter path has already been taken
-				if hasA && hasB {
+				if has_a && has_b {
 					// remove edge
 					edges.remove(i);
+					updated = true;
 					continue;
 				}
 
-				// If this connection is new, and plauible from the current tree
+				// If this connection is new, and plausible from the current tree
 				// add this edge
-				if hasA || hasB {
-					// Swap the edges so it goes from existing to new
+				if has_a || has_b {
+					// Remove the edge which is about to be added
 					let mut n = edges.remove(i);
-					if !hasA && hasB {
+
+					// Push the new node as visited
+					if !has_a {
+						visited.push(n.a);
+					} else if (!has_b) {
+						visited.push(n.b);
+					}
+
+					// Swap the edge direction to point existing -> new
+					if !has_a && has_b {
 						let t = n.a;
 						n.a = n.b;
 						n.b = t;
 					}
 
 					tree.push(n);
+					updated = true;
 					continue;
 				}
 
