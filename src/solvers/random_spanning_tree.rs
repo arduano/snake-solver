@@ -1,23 +1,25 @@
-use crate::{
-	auto::Path,
-	snake::{Cell},
-	Coord
-};
+use crate::{auto::Path, snake::Cell, Coord};
 
-use super::SnakeSolver;
+use super::{basic::BasicSnakeSolver, SnakeSolver};
 
-/// Generates a path that zigzags until the food, then when it reaches the bottom it goes up along the left.
-/// This only works in evenly-sized worlds.
-pub struct BasicSnakeSolver;
-
-struct Edge {
-	a: Coord,
-	b: Coord,
-	weight: f32,
+pub struct RandomSpanningTreeSolver {
+	pub prev_tree: Option<Vec<Edge>>,
 }
 
-impl SnakeSolver for BasicSnakeSolver {
-	fn get_next_path(world: &crate::snake::SnakeWorld) -> Path {
+impl RandomSpanningTreeSolver {
+	pub fn new() -> Self {
+		Self { prev_tree: None }
+	}
+}
+
+pub struct Edge {
+	pub a: Coord,
+	pub b: Coord,
+	pub weight: f32,
+}
+
+impl SnakeSolver for RandomSpanningTreeSolver {
+	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
 		let mut path = Path::new();
 
 		let mut current_coord = world.snake_head_coord();
@@ -69,16 +71,15 @@ impl SnakeSolver for BasicSnakeSolver {
 
 		edges.sort_by(|a, b| a.weight.partial_cmp(&b.weight).unwrap());
 
-
 		// Generate the minimum spanning tree from edges
 		let mut visited = Vec::<Coord>::new();
 		visited.push(edges[0].a);
 
-		let tree = Vec::<Edge>::new();
+		let mut tree = Vec::<Edge>::new();
 
 		// has not reached all vertexs
 		// & has not ran out of possible connections
-		while tree.len()+1 < totalVertexes && edges.len() > 0 {
+		while tree.len() + 1 < totalVertexes && edges.len() > 0 {
 			let mut i = 0;
 			while i < edges.len() {
 				let edge = &edges[i];
@@ -112,7 +113,10 @@ impl SnakeSolver for BasicSnakeSolver {
 			}
 		}
 
-		return path;
+		self.prev_tree = Some(tree);
+
+		// Just return the basic path for now
+		return BasicSnakeSolver.get_next_path(world);
 	}
 }
 

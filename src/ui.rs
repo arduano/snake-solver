@@ -3,12 +3,14 @@ use eframe::egui::{self, Response, Sense, Widget};
 use crate::{
 	auto::Path,
 	snake::{self, SnakeWorld},
+	solvers::random_spanning_tree::Edge,
 	Coord,
 };
 
 pub struct SnakeWorldViewer<'a> {
 	snake_world: &'a SnakeWorld,
 	overlay_path: Option<&'a Path>,
+	edges: Option<&'a Vec<Edge>>,
 }
 
 impl<'a> SnakeWorldViewer<'a> {
@@ -16,11 +18,17 @@ impl<'a> SnakeWorldViewer<'a> {
 		Self {
 			snake_world,
 			overlay_path: None,
+			edges: None,
 		}
 	}
 
 	pub fn with_path_overlay(mut self, path: &'a Path) -> Self {
 		self.overlay_path = Some(path);
+		self
+	}
+
+	pub fn with_edges_overlay(mut self, edges: &'a Vec<Edge>) -> Self {
+		self.edges = Some(edges);
 		self
 	}
 }
@@ -39,6 +47,10 @@ impl Widget for SnakeWorldViewer<'_> {
 
 		let mut mesh = egui::Mesh::default();
 
+		let get_coord_vec2 =
+			|coord: Coord| egui::vec2(coord.x as f32 * CELL_SIZE, coord.y as f32 * CELL_SIZE);
+		let half_cell = egui::vec2(CELL_SIZE / 2.0, CELL_SIZE / 2.0);
+
 		// Add background
 		mesh.add_colored_rect(rect, egui::Color32::from_rgb(0, 0, 0));
 
@@ -46,15 +58,16 @@ impl Widget for SnakeWorldViewer<'_> {
 			for y in 0..self.snake_world.size() {
 				let coord = Coord::new_usize(x, y);
 				let cell = self.snake_world.get_cell(coord).copied();
-				let rect = egui::Rect::from_min_size(
-					rect.min + egui::vec2(x as f32 * CELL_SIZE, y as f32 * CELL_SIZE),
-					egui::vec2(CELL_SIZE, CELL_SIZE),
-				);
+
 				match cell {
 					Some(snake::Cell::Empty) => {}
 					Some(snake::Cell::Snake(_)) => {}
 					Some(snake::Cell::Food) => {
-						// We only add food here
+						let rect = egui::Rect::from_min_size(
+							get_coord_vec2(coord).to_pos2(),
+							egui::vec2(CELL_SIZE, CELL_SIZE),
+						);
+
 						mesh.add_colored_rect(rect, egui::Color32::from_rgb(255, 0, 0));
 					}
 
@@ -70,11 +83,7 @@ impl Widget for SnakeWorldViewer<'_> {
 		let get_rect_for_coord = |coord: Coord| {
 			let padding = 1.0;
 			egui::Rect::from_min_size(
-				rect.min
-					+ egui::vec2(
-						coord.x as f32 * CELL_SIZE + padding,
-						coord.y as f32 * CELL_SIZE + padding,
-					),
+				rect.min + get_coord_vec2(coord) + egui::vec2(padding, padding),
 				egui::vec2(CELL_SIZE - padding * 2.0, CELL_SIZE - padding * 2.0),
 			)
 		};
@@ -105,8 +114,6 @@ impl Widget for SnakeWorldViewer<'_> {
 				let start = head + prev;
 				let end = head + offset;
 
-				let half_cell = egui::vec2(CELL_SIZE / 2.0, CELL_SIZE / 2.0);
-
 				let start = rect.min
 					+ egui::vec2(start.x as f32 * CELL_SIZE, start.y as f32 * CELL_SIZE)
 					+ half_cell;
@@ -129,6 +136,17 @@ impl Widget for SnakeWorldViewer<'_> {
 				self.snake_world.snake_head_coord(),
 				egui::Color32::from_rgb(255, 255, 0),
 			);
+		}
+
+		if let Some(edges) = &self.edges {
+			for edge in edges.iter() {
+				let start = get_coord_vec2(edge.a).to_pos2();
+				let end = get_coord_vec2(edge.b).to_pos2();
+				painter.add(egui::Shape::line_segment(
+					[start, end],
+					egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 0, 255)),
+				));
+			}
 		}
 
 		response

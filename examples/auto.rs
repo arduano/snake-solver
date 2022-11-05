@@ -1,13 +1,12 @@
 use snake_solver::{
 	auto::{AutoPlayerState, AutoSnakePlayer},
-	solvers::{basic::BasicSnakeSolver, SnakeSolver},
+	solvers::{random_spanning_tree::RandomSpanningTreeSolver, SnakeSolver},
 	ui::SnakeWorldViewer,
 };
 
 use eframe::egui::{self};
 
 const GRID_SIZE: i32 = 80;
-type CurrentSnakeSolver = BasicSnakeSolver;
 
 fn main() {
 	let width: f32 = GRID_SIZE as f32 * 10.0 + 20.0;
@@ -22,7 +21,7 @@ fn main() {
 	eframe::run_native(
 		"Auto snake game",
 		options,
-		Box::new(|_cc| Box::new(MyApp::<CurrentSnakeSolver>::default())),
+		Box::new(|_cc| Box::new(MyApp::new(RandomSpanningTreeSolver::new()))),
 	);
 }
 
@@ -31,24 +30,28 @@ struct MyApp<SS: SnakeSolver> {
 	speed: u32,
 }
 
-impl<SS: SnakeSolver> Default for MyApp<SS> {
-	fn default() -> Self {
+impl<SS: SnakeSolver> MyApp<SS> {
+	fn new(solver: SS) -> MyApp<SS> {
 		Self {
-			world: AutoSnakePlayer::new(GRID_SIZE as usize),
+			world: AutoSnakePlayer::new(GRID_SIZE as usize, solver),
 			speed: 1,
 		}
 	}
 }
 
-impl<SS: SnakeSolver> eframe::App for MyApp<SS> {
+impl eframe::App for MyApp<RandomSpanningTreeSolver> {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		egui::CentralPanel::default().show(ctx, |ui| {
 			match self.world.state() {
 				AutoPlayerState::Playing => {
-					ui.add(
-						SnakeWorldViewer::new(&self.world.world())
-							.with_path_overlay(self.world.current_path()),
-					);
+					let mut widget = SnakeWorldViewer::new(&self.world.world())
+						.with_path_overlay(self.world.current_path());
+
+					if let Some(tree) = &self.world.solver.prev_tree {
+						widget = widget.with_edges_overlay(tree);
+					}
+
+					ui.add(widget);
 				}
 				AutoPlayerState::Finished => {
 					ui.heading("Finished");

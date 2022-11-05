@@ -11,7 +11,7 @@ use super::SnakeSolver;
 pub struct BasicSnakeSolver;
 
 impl SnakeSolver for BasicSnakeSolver {
-	fn get_next_path(world: &crate::snake::SnakeWorld) -> Path {
+	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
 		let mut path = Path::new();
 
 		let mut current_coord = world.snake_head_coord();

@@ -18,17 +18,19 @@ pub struct AutoSnakePlayer<S: SnakeSolver> {
 	world: SnakeWorld,
 	current_path: Path,
 	state: AutoPlayerState,
+	pub solver: S,
 	_s: PhantomData<S>,
 }
 
 impl<S: SnakeSolver> AutoSnakePlayer<S> {
-	pub fn new(size: usize) -> Self {
+	pub fn new(size: usize, mut solver: S) -> Self {
 		let world = SnakeWorld::new(size);
-		let initial_path = S::get_next_path(&world);
+		let initial_path = solver.get_next_path(&world);
 		Self {
 			world,
 			current_path: initial_path,
 			state: AutoPlayerState::Playing,
+			solver,
 			_s: PhantomData,
 		}
 	}
@@ -44,7 +46,7 @@ impl<S: SnakeSolver> AutoSnakePlayer<S> {
 			if let Some(next) = self.current_path.pop() {
 				break next;
 			} else {
-				self.current_path = S::get_next_path(&self.world);
+				self.current_path = self.solver.get_next_path(&self.world);
 				if self.current_path.is_empty() {
 					panic!("Solver returned empty path");
 				}
