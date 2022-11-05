@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::snake::Direction;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -83,7 +85,7 @@ impl Offset {
 	}
 
 	fn length(&self) -> i32 {
-		f32::sqrt((self.x*self.x + self.y*self.y) as f32) as i32
+		f32::sqrt((self.x * self.x + self.y * self.y) as f32) as i32
 	}
 }
 
