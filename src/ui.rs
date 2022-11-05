@@ -2,15 +2,17 @@ use eframe::egui::{self, Response, Sense, Widget};
 
 use crate::{
 	auto::Path,
-	snake::{self, SnakeWorld},
+	grid_graph::GridGraph,
+	snake::{self, Direction, SnakeWorld},
 	solvers::random_spanning_tree::Edge,
-	Coord,
+	Coord, Offset,
 };
 
 pub struct SnakeWorldViewer<'a> {
 	snake_world: &'a SnakeWorld,
 	overlay_path: Option<&'a Path>,
 	edges: Option<&'a Vec<Edge>>,
+	bools_edges_grid: Option<&'a GridGraph<bool>>,
 }
 
 impl<'a> SnakeWorldViewer<'a> {
@@ -19,6 +21,7 @@ impl<'a> SnakeWorldViewer<'a> {
 			snake_world,
 			overlay_path: None,
 			edges: None,
+			bools_edges_grid: None,
 		}
 	}
 
@@ -29,6 +32,11 @@ impl<'a> SnakeWorldViewer<'a> {
 
 	pub fn with_edges_overlay(mut self, edges: &'a Vec<Edge>) -> Self {
 		self.edges = Some(edges);
+		self
+	}
+
+	pub fn with_bools_edges_grid_overlay(mut self, bools_edges_grid: &'a GridGraph<bool>) -> Self {
+		self.bools_edges_grid = Some(bools_edges_grid);
 		self
 	}
 }
@@ -134,6 +142,27 @@ impl Widget for SnakeWorldViewer<'_> {
 					[start, end],
 					egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 0, 255)),
 				));
+			}
+		}
+
+		if let Some(bools_edges_grid) = &self.bools_edges_grid {
+			for x in 0..bools_edges_grid.size() {
+				for y in 0..bools_edges_grid.size() {
+					let coord = Coord::new_usize(x, y);
+					for dir in Direction::each() {
+						let offset = Offset::from_direction(dir);
+						let other_coord = coord + offset;
+
+						if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
+							let start = get_coord_vec2(coord);
+							let end = get_coord_vec2(other_coord);
+							painter.add(egui::Shape::line_segment(
+								[start, end],
+								egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 255)),
+							));
+						}
+					}
+				}
 			}
 		}
 

@@ -1,14 +1,23 @@
-use crate::{auto::Path, snake::{Cell, Direction}, Coord, grid_graph::GridGraph};
+use crate::{
+	auto::Path,
+	grid_graph::GridGraph,
+	snake::{Cell, Direction},
+	Coord,
+};
 
 use super::{basic::BasicSnakeSolver, SnakeSolver};
 
 pub struct RandomSpanningTreeSolver {
 	pub prev_tree: Option<Vec<Edge>>,
+	pub prev_grid: Option<GridGraph<bool>>,
 }
 
 impl RandomSpanningTreeSolver {
 	pub fn new() -> Self {
-		Self { prev_tree: None }
+		Self {
+			prev_tree: None,
+			prev_grid: None,
+		}
 	}
 }
 
@@ -28,9 +37,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		// Create a random directed graph of edges
 		let mut edges = Vec::<Edge>::new();
-		for x in (1..world.size()-2).step_by(2) {
-			for y in (1..world.size()-2).step_by(2) {
-
+		for x in (1..world.size() - 2).step_by(2) {
+			for y in (1..world.size() - 2).step_by(2) {
 				// Is location A valid?
 				let a = Coord::new_usize(x, y);
 				if check_obstruction(world, a) {
@@ -59,7 +67,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						}
 
 						edges.push(Edge {
-							a, b,
+							a,
+							b,
 							weight: rand::random(),
 						});
 						has_connection = true;
@@ -131,9 +140,9 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y)),
 						match vertical {
 							true => Direction::Down,
-							false => Direction::Left
+							false => Direction::Left,
 						},
-						true
+						true,
 					);
 
 					tree.push(wall);
@@ -147,6 +156,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		}
 
 		self.prev_tree = Some(tree);
+		self.prev_grid = Some(grid);
 
 		// Just return the basic path for now
 		return BasicSnakeSolver.get_next_path(world);

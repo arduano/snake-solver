@@ -44,11 +44,16 @@ impl eframe::App for MyApp<RandomSpanningTreeSolver> {
 		egui::CentralPanel::default().show(ctx, |ui| {
 			match self.world.state() {
 				AutoPlayerState::Playing => {
-					let mut widget = SnakeWorldViewer::new(&self.world.world())
-						.with_path_overlay(self.world.current_path());
+					let mut widget = SnakeWorldViewer::new(&self.world.world());
+
+					// widget = widget.with_path_overlay(self.world.current_path());
 
 					if let Some(tree) = &self.world.solver.prev_tree {
 						widget = widget.with_edges_overlay(tree);
+					}
+
+					if let Some(grid) = &self.world.solver.prev_grid {
+						widget = widget.with_bools_edges_grid_overlay(grid);
 					}
 
 					ui.add(widget);
