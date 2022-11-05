@@ -18,6 +18,10 @@ impl Coord {
 		}
 	}
 
+	pub fn get_offset(&self, other: Coord) -> Offset {
+		Offset::new(self.x - other.x, self.y - other.y)
+	}
+
 	fn add_offset(&self, offset: Offset) -> Self {
 		Self {
 			x: self.x + offset.0.x,
@@ -69,6 +73,10 @@ impl Offset {
 
 	fn add_offset(&self, offset: Offset) -> Self {
 		Self(self.0.add_offset(offset))
+	}
+
+	fn length(&self) -> i32 {
+		f32::sqrt((self.x*self.x + self.y*self.y) as f32) as i32
 	}
 }
 
