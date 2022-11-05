@@ -31,17 +31,22 @@ impl SnakeSolver for BasicSnakeSolver {
 				let a = Coord::new_usize(x, y);
 
 				// Skip invalid locations
-				if (check_obstruction_4block(world, a)) {
+				if (check_obstruction(world, a)) {
 					continue;
 				}
 
 				for offX in 0..1 {
 					for offY in 0..1 {
 						let tween = Coord::new_usize(x + offX, y + offY);
+						// Skip invalid path
+						if (check_obstruction(world, tween)) {
+							continue;
+						}
+
 						let b = Coord::new_usize(x + offX * 2, y + offY * 2);
 
 						// Skip invalid locations
-						if (check_obstruction_4block(world, b)) {
+						if (check_obstruction(world, b)) {
 							continue;
 						}
 
@@ -59,15 +64,9 @@ impl SnakeSolver for BasicSnakeSolver {
 	}
 }
 
-fn check_obstruction_4block(world: &crate::snake::SnakeWorld, pos: Coord) -> bool {
-	for x in 0..1 {
-		for y in 0..1 {
-			match world.get_cell(pos) {
-				Some(Cell::Snake(_)) => return true,
-				_ => {}
-			};
-		}
-	}
-
-	return false;
+fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord) -> bool {
+	return match world.get_cell(pos) {
+		Some(Cell::Snake(_)) => true,
+		_ => false,
+	};
 }
