@@ -1,4 +1,4 @@
-use crate::{auto::Path, snake::Cell, Coord};
+use crate::{auto::Path, snake::{Cell, Direction}, Coord, grid_graph::GridGraph};
 
 use super::{basic::BasicSnakeSolver, SnakeSolver};
 
@@ -28,8 +28,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		// Create a random directed graph of edges
 		let mut edges = Vec::<Edge>::new();
-		for x in (0..world.size()).step_by(2) {
-			for y in (0..world.size()).step_by(2) {
+		for x in (1..world.size()-2).step_by(2) {
+			for y in (1..world.size()-2).step_by(2) {
 
 				// Is location A valid?
 				let a = Coord::new_usize(x, y);
@@ -38,8 +38,15 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 				}
 
 				let mut has_connection = false;
-				for off_x in 0..1 {
-					for off_y in 0..1 {
+				for off_x in 0..=1 {
+					for off_y in 0..=1 {
+						if off_x == 0 && off_y == 0 {
+							continue;
+						}
+						if off_x == 1 && off_y == 1 {
+							continue;
+						}
+
 						// Unable to reach B
 						if check_obstruction(world, Coord::new_usize(x + off_x, y + off_y)) {
 							continue;
@@ -72,6 +79,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		let mut visited = Vec::<Coord>::new();
 		let mut tree = Vec::<Edge>::new();
 
+		let mut grid = GridGraph::<bool>::new(world.size() as usize, false);
+
 		// Mark the start point for the spanning tree
 		visited.push(edges[0].a);
 
@@ -82,7 +91,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			updated = false;
 
 			let mut i = 0;
-			println!("Tree: {}\nVisited: {}\nEdges:{}", tree.len(), visited.len(), edges.len());
 			while i < edges.len() {
 				let edge = &edges[i];
 				let has_a = visited.contains(&edge.a);
@@ -94,7 +102,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					// remove edge
 					edges.remove(i);
 					updated = true;
-					println!("  {}", "Edge exists");
 					continue;
 				}
 
@@ -102,25 +109,36 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 				// add this edge
 				if has_a || has_b {
 					// Remove the edge which is about to be added
-					let mut n = edges.remove(i);
+					let mut wall = edges.remove(i);
 
 					// Push the new node as visited
 					if !has_a {
-						visited.push(n.a);
+						visited.push(wall.a);
 					} else if !has_b {
-						visited.push(n.b);
+						visited.push(wall.b);
 					}
 
 					// Swap the edge direction to point existing -> new
 					if !has_a && has_b {
-						let t = n.a;
-						n.a = n.b;
-						n.b = t;
+						let t = wall.a;
+						wall.a = wall.b;
+						wall.b = t;
 					}
 
-					tree.push(n);
+					let vertical = wall.a.y != wall.b.y;
+
+					grid.set_edge(
+						Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y)),
+						match vertical {
+							true => Direction::Down,
+							false => Direction::Left
+						},
+						true
+					);
+
+					tree.push(wall);
+
 					updated = true;
-					println!("  {}", "Added edge");
 					continue;
 				}
 
