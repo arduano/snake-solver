@@ -213,6 +213,10 @@ impl SnakeWorld {
 		self.food_coord
 	}
 
+	pub fn prev_direction(&self) -> Option<Direction> {
+		self.prev_direction
+	}
+
 	pub fn calculate_snake_path_from_head(&self) -> Path {
 		let mut pos = self.head_coord;
 		let mut path = Path::new();
