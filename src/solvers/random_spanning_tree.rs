@@ -158,7 +158,21 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		let mut path = Path::new();
 		let mut pos = world.snake_head_coord();
-		let mut dir = world.prev_direction().unwrap_or(Direction::Right);
+		let mut dir = match world.prev_direction() {
+			Some(v) => v,
+			None => {
+				if grid.get_edge(pos, Direction::Right) == Some(&false) {
+					Direction::Right
+				} else if grid.get_edge(pos, Direction::Down) == Some(&false) {
+					Direction::Down
+				} else if grid.get_edge(pos, Direction::Left) == Some(&false) {
+					Direction::Left
+				} else {
+					Direction::Right
+				}
+			}
+		};
+
 		let mut max = 10;
 		loop {
 			match world.get_cell(pos) {
