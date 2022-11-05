@@ -4,7 +4,7 @@ use crate::{
 	Offset, Coord,
 };
 
-use rand::Rng
+use rand::Rng;
 
 use super::SnakeSolver;
 
@@ -25,7 +25,7 @@ impl SnakeSolver for BasicSnakeSolver {
 		let mut current_coord = world.snake_head_coord();
 
 		// Create a random directed graph of edges
-		let mut edges = Vec<Edge>::new();
+		let mut edges = Vec::<Edge>::new();
 		for x in (0..world.size()).step_by(2) {
 			for y in (0..world.size()).step_by(2) {
 				let a = Coord::new_usize(x, y);
@@ -37,6 +37,7 @@ impl SnakeSolver for BasicSnakeSolver {
 
 				for offX in 0..1 {
 					for offY in 0..1 {
+						let tween = Coord::new_usize(x + offX, y + offY);
 						let b = Coord::new_usize(x + offX*2, y + offY*2);
 
 						// Skip invalid locations
@@ -46,7 +47,7 @@ impl SnakeSolver for BasicSnakeSolver {
 
 						edges.push(Edge {
 							a, b,
-							weight: rng.gen<f32>()
+							weight: rand::random()
 						})
 					}
 				}
