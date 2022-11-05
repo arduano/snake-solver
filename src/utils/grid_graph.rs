@@ -42,7 +42,13 @@ impl<T> GridGraph<T> {
 	}
 
 	pub fn is_in_bounds(&self, coord: Coord) -> bool {
-		coord.x >= 0 && coord.y >= 0 && coord.x < self.size as i32 && coord.y < self.size as i32
+		let edge_coord = self.get_cell_coord(coord);
+		self.cells.is_in_bounds(edge_coord)
+	}
+
+	pub fn is_in_bounds_with_direction(&self, coord: Coord, direction: Direction) -> bool {
+		let edge_coord = self.get_edge_coord(coord, direction);
+		self.cells.is_in_bounds(edge_coord)
 	}
 
 	pub fn size(&self) -> usize {
