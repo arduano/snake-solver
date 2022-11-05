@@ -145,7 +145,7 @@ impl Widget for SnakeWorldViewer<'_> {
 
 						if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
 							let start = coord + Offset::from_direction(dir);
-							let end = start + Offset::from_direction(dir.rotate_left());
+							let end = start + Offset::from_direction(dir.rotate_right());
 
 							let start = get_coord_vec2(start);
 							let end = get_coord_vec2(end);

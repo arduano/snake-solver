@@ -119,15 +119,17 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 					let vertical = wall.a.y != wall.b.y;
 					let mut pos = Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
-					if !vertical {
-						pos.x += 1;
+					if vertical {
+						pos.x -= 1;
+					} else {
+						pos.y -= 1;
 					}
 
 					grid.set_edge(
 						pos,
 						match vertical {
-							true => Direction::Down,
-							false => Direction::Left,
+							true => Direction::Right,
+							false => Direction::Down,
 						},
 						true,
 					);
@@ -141,8 +143,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					grid.set_edge(
 						pos,
 						match vertical {
-							true => Direction::Down,
-							false => Direction::Left,
+							true => Direction::Right,
+							false => Direction::Down,
 						},
 						true,
 					);
