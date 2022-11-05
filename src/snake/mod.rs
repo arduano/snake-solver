@@ -1,10 +1,8 @@
 use rand::Rng;
 
-use array2d::Array2D;
+use crate::array2d::Array2D;
 
-use crate::{Coord, Offset};
-
-mod array2d;
+use crate::{auto::Path, Coord, Offset};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cell {
@@ -19,6 +17,21 @@ pub enum Direction {
 	Down,
 	Left,
 	Right,
+}
+
+impl Direction {
+	pub fn each() -> impl Iterator<Item = Self> {
+		[Self::Up, Self::Down, Self::Left, Self::Right].into_iter()
+	}
+
+	pub fn opposite(&self) -> Self {
+		match self {
+			Self::Up => Self::Down,
+			Self::Down => Self::Up,
+			Self::Left => Self::Right,
+			Self::Right => Self::Left,
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,5 +177,60 @@ impl SnakeWorld {
 
 	pub fn size(&self) -> usize {
 		self.cells.size()
+	}
+
+	pub fn snake_length(&self) -> u32 {
+		self.snake_length
+	}
+
+	pub fn calculate_snake_path_from_head(&self) -> Path {
+		let mut pos = self.head_coord;
+		let mut path = Path::new();
+
+		struct NextSnakeCellData {
+			coord: Coord,
+			direction: Direction,
+			value: u32,
+		}
+
+		let mut next_snake_cell_data: Option<NextSnakeCellData> = None;
+		let Some(Cell::Snake( mut  current_value)) = self.cells.get(pos) else {
+			unreachable!("Head coord is not a snake cell")
+		};
+
+		loop {
+			for direction in Direction::each() {
+				let coord = pos + Offset::from_direction(direction);
+				if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
+					let smaller = *iteration < current_value;
+					if smaller {
+						let is_next = if let Some(next_data) = &next_snake_cell_data {
+							*iteration > next_data.value
+						} else {
+							true
+						};
+
+						if is_next {
+							next_snake_cell_data = Some(NextSnakeCellData {
+								coord,
+								direction,
+								value: *iteration,
+							});
+						}
+					}
+				}
+			}
+
+			if let Some(next_data) = next_snake_cell_data {
+				path.push(next_data.direction);
+				pos = next_data.coord;
+				current_value = next_data.value;
+				next_snake_cell_data = None;
+			} else {
+				break;
+			}
+		}
+
+		path
 	}
 }

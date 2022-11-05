@@ -1,7 +1,7 @@
 use crate::{
 	auto::Path,
 	snake::{Cell, Direction},
-	Offset, Coord,
+	Coord, Offset,
 };
 
 use rand::Rng;
@@ -15,7 +15,7 @@ pub struct BasicSnakeSolver;
 struct Edge {
 	a: Coord,
 	b: Coord,
-	weight: f32
+	weight: f32,
 }
 
 impl SnakeSolver for BasicSnakeSolver {
@@ -43,7 +43,7 @@ impl SnakeSolver for BasicSnakeSolver {
 							continue;
 						}
 
-						let b = Coord::new_usize(x + offX*2, y + offY*2);
+						let b = Coord::new_usize(x + offX * 2, y + offY * 2);
 
 						// Skip invalid locations
 						if (check_obstruction(world, b)) {
@@ -51,8 +51,9 @@ impl SnakeSolver for BasicSnakeSolver {
 						}
 
 						edges.push(Edge {
-							a, b,
-							weight: rand::random()
+							a,
+							b,
+							weight: rand::random(),
 						})
 					}
 				}
@@ -63,10 +64,9 @@ impl SnakeSolver for BasicSnakeSolver {
 	}
 }
 
-
 fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord) -> bool {
 	return match world.get_cell(pos) {
 		Some(Cell::Snake(_)) => true,
-		_ => false
+		_ => false,
 	};
 }
