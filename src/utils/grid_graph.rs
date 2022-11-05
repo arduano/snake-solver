@@ -18,7 +18,7 @@ impl<T> GridGraph<T> {
 	}
 
 	fn get_cell_coord(&self, coord: Coord) -> Coord {
-		coord.map_values(|v| v * 2 - 1)
+		coord.map_values(|v| v * 2)
 	}
 
 	fn get_edge_coord(&self, coord: Coord, dir: Direction) -> Coord {
