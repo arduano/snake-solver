@@ -55,27 +55,14 @@ impl Widget for SnakeWorldViewer<'_> {
 		// Add background
 		mesh.add_colored_rect(rect, egui::Color32::from_rgb(0, 0, 0));
 
-		for x in 0..self.snake_world.size() {
-			for y in 0..self.snake_world.size() {
-				let coord = Coord::new_usize(x, y);
-				let cell = self.snake_world.get_cell(coord).copied();
-
-				match cell {
-					Some(snake::Cell::Empty) => {}
-					Some(snake::Cell::Snake(_)) => {}
-					Some(snake::Cell::Food) => {
-						let rect = egui::Rect::from_min_size(
-							get_coord_vec2(coord),
-							egui::vec2(CELL_SIZE, CELL_SIZE),
-						);
-
-						mesh.add_colored_rect(rect, egui::Color32::from_rgb(255, 0, 0));
-					}
-
-					None => unreachable!(),
-				}
-			}
-		}
+		// Add food
+		mesh.add_colored_rect(
+			egui::Rect::from_min_size(
+				get_coord_vec2(self.snake_world.food_coord()),
+				egui::vec2(CELL_SIZE, CELL_SIZE),
+			),
+			egui::Color32::from_rgb(255, 0, 0),
+		);
 
 		let mut iter = snake_path.iter_offsets();
 		let head = self.snake_world.snake_head_coord();

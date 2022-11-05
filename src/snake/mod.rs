@@ -44,6 +44,7 @@ pub enum SnakeResult {
 pub struct SnakeWorld {
 	snake_length: u32,
 	head_coord: Coord,
+	food_coord: Coord,
 	cells: Array2D<Cell>,
 }
 
@@ -57,6 +58,7 @@ impl SnakeWorld {
 		let mut world = Self {
 			snake_length: 5,
 			head_coord,
+			food_coord: Coord::new_i32(-1, -1),
 			cells,
 		};
 
@@ -160,6 +162,7 @@ impl SnakeWorld {
 
 	fn spawn_food(&mut self) -> bool {
 		if let Some(coord) = self.find_random_valid_food_coord() {
+			self.food_coord = coord;
 			self.cells.set(coord, Cell::Food);
 			true
 		} else {
@@ -181,6 +184,10 @@ impl SnakeWorld {
 
 	pub fn snake_length(&self) -> u32 {
 		self.snake_length
+	}
+
+	pub fn food_coord(&self) -> Coord {
+		self.food_coord
 	}
 
 	pub fn calculate_snake_path_from_head(&self) -> Path {
