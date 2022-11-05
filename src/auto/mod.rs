@@ -1,7 +1,6 @@
-mod path;
 use std::marker::PhantomData;
 
-pub use path::*;
+pub use crate::path::*;
 
 use crate::{
 	snake::{SnakeResult, SnakeWorld},

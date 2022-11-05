@@ -54,6 +54,10 @@ impl Offset {
 		Self::new(1, 0)
 	}
 
+	pub fn each() -> impl Iterator<Item = Self> {
+		[Self::up(), Self::down(), Self::left(), Self::right()].into_iter()
+	}
+
 	pub fn from_direction(dir: Direction) -> Self {
 		match dir {
 			Direction::Up => Self::up(),
