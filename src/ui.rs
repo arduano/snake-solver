@@ -90,6 +90,11 @@ impl Widget for SnakeWorldViewer<'_> {
 			prev = Some(coord);
 		}
 
+		mesh.add_colored_rect(
+			get_rect_for_coord(self.snake_world.snake_head_coord()),
+			egui::Color32::from_rgb(0, 128, 0),
+		);
+
 		painter.add(egui::Shape::Mesh(mesh));
 
 		let render_path = |path: &Path, head: Coord, color: egui::Color32| {
