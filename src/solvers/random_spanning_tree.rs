@@ -13,9 +13,7 @@ pub struct RandomSpanningTreeSolver {
 
 impl RandomSpanningTreeSolver {
 	pub fn new() -> Self {
-		Self {
-			prev_grid: None
-		}
+		Self { prev_grid: None }
 	}
 }
 
@@ -27,6 +25,8 @@ pub struct Edge {
 
 impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
+		let food = world.food_coord();
+
 		// Create a random directed graph of edges
 		let mut edges = Vec::<Edge>::new();
 		for x in (1..world.size() - 1).step_by(2) {
@@ -47,7 +47,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						}
 
 						// Unable to reach B
-						if check_obstruction(world, Coord::new_usize(x + off_x, y + off_y), world.snake_head_coord()) {
+						let t = Coord::new_usize(x + off_x, y + off_y);
+						if check_obstruction(world, t, world.snake_head_coord()) {
 							continue;
 						}
 
@@ -57,10 +58,13 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 							continue;
 						}
 
+						// distance from food as percentage
+						// let dist = food.get_offset(t).length() as f32 / world.size() as f32;
+
 						edges.push(Edge {
 							a,
 							b,
-							weight: rand::random(),
+							weight: rand::random::<f32>(),
 						});
 					}
 				}
@@ -74,7 +78,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		let mut grid = GridGraph::<bool>::new(world.size() as usize, false);
 
 		// Mark the start point for the spanning tree
-		visited.push(edges[0].a);
+		let start = Coord::new_i32(food.x - (food.x % 2) + 1, food.y - (food.y % 2) + 1);
+		visited.push(start);
 
 		// has not reached all vertexes
 		// & has not ran out of possible connections
@@ -118,7 +123,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					}
 
 					let vertical = wall.a.y != wall.b.y;
-					let mut pos = Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
+					let mut pos =
+						Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
 					if vertical {
 						pos.x -= 1;
 					} else {
@@ -143,7 +149,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 		}
 
-
 		let mut path = Path::new();
 		let mut pos = world.snake_head_coord();
 		let mut dir = match world.prev_direction() {
@@ -159,11 +164,13 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 		};
 
-		let mut max = world.size()*world.size();
+		let mut max = world.size() * world.size();
 		let mut trailing = false;
 		loop {
 			match world.get_cell(pos) {
-				Some(Cell::Food) => {break;}
+				Some(Cell::Food) => {
+					break;
+				}
 				_ => {}
 			}
 
@@ -210,11 +217,9 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	}
 }
 
-
-
 fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) -> bool {
 	if pos == head {
-		return  true;
+		return true;
 	}
 
 	return match world.get_cell(pos) {
@@ -223,8 +228,7 @@ fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) 
 	};
 }
 
-
-fn set_grid_edge(grid: &mut GridGraph::<bool>, pos: Coord, vertical: bool) {
+fn set_grid_edge(grid: &mut GridGraph<bool>, pos: Coord, vertical: bool) {
 	grid.set_edge(
 		pos,
 		match vertical {
