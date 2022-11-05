@@ -47,8 +47,9 @@ impl Widget for SnakeWorldViewer<'_> {
 
 		let mut mesh = egui::Mesh::default();
 
-		let get_coord_vec2 =
-			|coord: Coord| egui::vec2(coord.x as f32 * CELL_SIZE, coord.y as f32 * CELL_SIZE);
+		let get_coord_vec2 = |coord: Coord| {
+			rect.min + egui::vec2(coord.x as f32 * CELL_SIZE, coord.y as f32 * CELL_SIZE)
+		};
 		let half_cell = egui::vec2(CELL_SIZE / 2.0, CELL_SIZE / 2.0);
 
 		// Add background
@@ -64,7 +65,7 @@ impl Widget for SnakeWorldViewer<'_> {
 					Some(snake::Cell::Snake(_)) => {}
 					Some(snake::Cell::Food) => {
 						let rect = egui::Rect::from_min_size(
-							get_coord_vec2(coord).to_pos2(),
+							get_coord_vec2(coord),
 							egui::vec2(CELL_SIZE, CELL_SIZE),
 						);
 
@@ -83,7 +84,7 @@ impl Widget for SnakeWorldViewer<'_> {
 		let get_rect_for_coord = |coord: Coord| {
 			let padding = 1.0;
 			egui::Rect::from_min_size(
-				rect.min + get_coord_vec2(coord) + egui::vec2(padding, padding),
+				get_coord_vec2(coord) + egui::vec2(padding, padding),
 				egui::vec2(CELL_SIZE - padding * 2.0, CELL_SIZE - padding * 2.0),
 			)
 		};
@@ -140,8 +141,8 @@ impl Widget for SnakeWorldViewer<'_> {
 
 		if let Some(edges) = &self.edges {
 			for edge in edges.iter() {
-				let start = get_coord_vec2(edge.a).to_pos2();
-				let end = get_coord_vec2(edge.b).to_pos2();
+				let start = get_coord_vec2(edge.a);
+				let end = get_coord_vec2(edge.b);
 				painter.add(egui::Shape::line_segment(
 					[start, end],
 					egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 0, 255)),
