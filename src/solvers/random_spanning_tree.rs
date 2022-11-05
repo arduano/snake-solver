@@ -1,10 +1,8 @@
 use crate::{
 	auto::Path,
-	snake::{Cell, Direction},
-	Coord, Offset,
+	snake::{Cell},
+	Coord
 };
-
-use rand::Rng;
 
 use super::SnakeSolver;
 
@@ -33,7 +31,7 @@ impl SnakeSolver for BasicSnakeSolver {
 				let a = Coord::new_usize(x, y);
 
 				// Skip invalid locations
-				if (check_obstruction(world, a)) {
+				if check_obstruction(world, a) {
 					continue;
 				}
 
@@ -42,14 +40,14 @@ impl SnakeSolver for BasicSnakeSolver {
 					for offY in 0..1 {
 						let tween = Coord::new_usize(x + offX, y + offY);
 						// Skip invalid path
-						if (check_obstruction(world, tween)) {
+						if check_obstruction(world, tween) {
 							continue;
 						}
 
 						let b = Coord::new_usize(x + offX * 2, y + offY * 2);
 
 						// Skip invalid locations
-						if (check_obstruction(world, b)) {
+						if check_obstruction(world, b) {
 							continue;
 						}
 
@@ -57,13 +55,13 @@ impl SnakeSolver for BasicSnakeSolver {
 							a,
 							b,
 							weight: rand::random(),
-						})
+						});
 						hasConnection = true;
 						totalVertexes += 1;
 					}
 				}
 
-				if (hasConnection) {
+				if hasConnection {
 					totalVertexes += 1;
 				}
 			}
@@ -80,16 +78,16 @@ impl SnakeSolver for BasicSnakeSolver {
 
 		// has not reached all vertexs
 		// & has not ran out of possible connections
-		while (tree.len()+1 < totalVertexes && edges.len() > 0) {
+		while tree.len()+1 < totalVertexes && edges.len() > 0 {
 			let mut i = 0;
 			while i < edges.len() {
-				let edge = edges[i];
+				let edge = &edges[i];
 				let hasA = visited.contains(&edge.a);
 				let hasB = visited.contains(&edge.b);
 
 				// If the connection between these two nodes already exists
 				// Remove this option as a shorter path has already been taken
-				if (hasA && hasB) {
+				if hasA && hasB {
 					// remove edge
 					edges.remove(i);
 					continue;
@@ -97,16 +95,16 @@ impl SnakeSolver for BasicSnakeSolver {
 
 				// If this connection is new, and plauible from the current tree
 				// add this edge
-				if (hasA || hasB) {
+				if hasA || hasB {
 					// Swap the edges so it goes from existing to new
-					if (!hasA && hasB) {
-						let t = edge.a;
-						edge.a = edge.b;
-						edge.b = t;
+					let mut n = edges.remove(i);
+					if !hasA && hasB {
+						let t = n.a;
+						n.a = n.b;
+						n.b = t;
 					}
 
-					tree.push(edge);
-					edges.remove(i);
+					tree.push(n);
 					continue;
 				}
 
