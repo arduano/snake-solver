@@ -5,7 +5,7 @@ use crate::{
 	Coord, Offset,
 };
 
-use super::{basic::BasicSnakeSolver, SnakeSolver};
+use super::{SnakeSolver};
 
 pub struct RandomSpanningTreeSolver {
 	pub prev_grid: Option<GridGraph<bool>>,
@@ -25,11 +25,9 @@ pub struct Edge {
 
 impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
-		let food = world.food_coord();
-
-		let edges = Generate_Edges(world);
-		let grid = Generate_Grid_Network(world, edges);
-		let path = Generate_Path(world, &grid);
+		let edges = generate_edges(world);
+		let grid = generate_grid_network(world, edges);
+		let path = generate_path(world, &grid);
 
 		// Just return the basic path for now
 		self.prev_grid = Some(grid);
@@ -37,9 +35,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	}
 }
 
-fn Generate_Edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
-	let food = world.food_coord();
-
+fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	// Create a random directed graph of edges
 	let mut edges = Vec::<Edge>::new();
 	for x in (1..world.size() - 1).step_by(2) {
@@ -89,7 +85,7 @@ fn Generate_Edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	return edges;
 }
 
-fn Generate_Grid_Network(
+fn generate_grid_network(
 	world: &crate::snake::SnakeWorld,
 	mut edges: Vec<Edge>,
 ) -> GridGraph<bool> {
@@ -174,7 +170,7 @@ fn Generate_Grid_Network(
 	return grid;
 }
 
-fn Generate_Path(world: &crate::snake::SnakeWorld, grid: &GridGraph<bool>) -> Path {
+fn generate_path(world: &crate::snake::SnakeWorld, grid: &GridGraph<bool>) -> Path {
 	// Find path
 	let mut path = Path::new();
 	let mut pos = world.snake_head_coord();
