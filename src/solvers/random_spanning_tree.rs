@@ -1,3 +1,7 @@
+extern crate rand;
+
+use rand::{thread_rng, Rng, seq::SliceRandom};
+
 use crate::{
 	auto::Path,
 	grid_graph::GridGraph,
@@ -36,6 +40,14 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 }
 
 fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
+	let food = world.food_coord();
+	let head = world.snake_head_coord();
+
+	// let mut mid_point_off = food.get_offset(head);
+	// mid_point_off.x /= 2;
+	// mid_point_off.y /= 2;
+	// let mid_point = food + mid_point_off;
+
 	// Create a random directed graph of edges
 	let mut edges = Vec::<Edge>::new();
 	for x in (1..world.size() - 1).step_by(2) {
@@ -60,12 +72,16 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 				}
 
 				// distance from food as percentage
-				// let dist = food.get_offset(t).length() as f32 / world.size() as f32;
+
+
+				// let dist_food = food.get_offset(t).length() as f32 / world.size() as f32;
+				let dist_head = head.get_offset(t).length() as f32 / world.size() as f32;
+				// let dist_mid = mid_point.get_offset(t).length() as f32 / world.size() as f32;
 
 				edges.push(Edge {
 					a,
 					b,
-					weight: rand::random::<f32>(),
+					weight: dist_head * 0.1 + rand::random::<f32>(),
 				});
 			}
 		}
