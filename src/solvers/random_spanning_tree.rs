@@ -30,9 +30,9 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		let mut edges = Vec::<Edge>::new();
 		for x in (0..world.size()).step_by(2) {
 			for y in (0..world.size()).step_by(2) {
-				let a = Coord::new_usize(x, y);
 
-				// Skip invalid locations
+				// Is location A valid?
+				let a = Coord::new_usize(x, y);
 				if check_obstruction(world, a) {
 					continue;
 				}
@@ -40,22 +40,19 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 				let mut has_connection = false;
 				for off_x in 0..1 {
 					for off_y in 0..1 {
-						let tween = Coord::new_usize(x + off_x, y + off_y);
-						// Skip invalid path
-						if check_obstruction(world, tween) {
+						// Unable to reach B
+						if check_obstruction(world, Coord::new_usize(x + off_x, y + off_y)) {
 							continue;
 						}
 
+						// Is location A valid?
 						let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
-
-						// Skip invalid locations
 						if check_obstruction(world, b) {
 							continue;
 						}
 
 						edges.push(Edge {
-							a,
-							b,
+							a, b,
 							weight: rand::random(),
 						});
 						has_connection = true;
@@ -73,9 +70,10 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		// Generate the minimum spanning tree from edges
 		let mut visited = Vec::<Coord>::new();
-		visited.push(edges[0].a);
-
 		let mut tree = Vec::<Edge>::new();
+
+		// Mark the start point for the spanning tree
+		visited.push(edges[0].a);
 
 		// has not reached all vertexes
 		// & has not ran out of possible connections
@@ -84,7 +82,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			updated = false;
 
 			let mut i = 0;
-			println!("{} {} {}", tree.len(), visited.len(), edges.len());
+			println!("Tree: {}\nVisited: {}\nEdges:{}", tree.len(), visited.len(), edges.len());
 			while i < edges.len() {
 				let edge = &edges[i];
 				let has_a = visited.contains(&edge.a);
@@ -96,6 +94,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					// remove edge
 					edges.remove(i);
 					updated = true;
+					println!("  {}", "Edge exists");
 					continue;
 				}
 
@@ -108,7 +107,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					// Push the new node as visited
 					if !has_a {
 						visited.push(n.a);
-					} else if (!has_b) {
+					} else if !has_b {
 						visited.push(n.b);
 					}
 
@@ -121,6 +120,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 					tree.push(n);
 					updated = true;
+					println!("  {}", "Added edge");
 					continue;
 				}
 
