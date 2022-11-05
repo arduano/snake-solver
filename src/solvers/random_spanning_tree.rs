@@ -2,7 +2,7 @@ use crate::{
 	auto::Path,
 	grid_graph::GridGraph,
 	snake::{Cell, Direction},
-	Coord,
+	Coord, Offset,
 };
 
 use super::{basic::BasicSnakeSolver, SnakeSolver};
@@ -33,7 +33,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			for y in (1..world.size() - 2).step_by(2) {
 				// Is location A valid?
 				let a = Coord::new_usize(x, y);
-				if check_obstruction(world, a) {
+				if check_obstruction(world, a, world.snake_head_coord()) {
 					continue;
 				}
 
@@ -47,13 +47,13 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						}
 
 						// Unable to reach B
-						if check_obstruction(world, Coord::new_usize(x + off_x, y + off_y)) {
+						if check_obstruction(world, Coord::new_usize(x + off_x, y + off_y), world.snake_head_coord()) {
 							continue;
 						}
 
 						// Is location A valid?
 						let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
-						if check_obstruction(world, b) {
+						if check_obstruction(world, b, world.snake_head_coord()) {
 							continue;
 						}
 
@@ -155,17 +155,46 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 		}
 
-		self.prev_grid = Some(grid);
 
-		let mut current_coord = world.snake_head_coord();
 		let mut path = Path::new();
+		let mut pos = world.snake_head_coord();
+		let mut dir = world.prev_direction().unwrap_or(Direction::Right);
+		let mut max = 10;
+		loop {
+			match world.get_cell(pos) {
+				Some(Cell::Food) => {break;}
+				_ => {}
+			}
+
+			let right = dir.rotate_right();
+			if grid.get_edge(pos, right) == Some(&false) {
+				dir = right;
+			} else if grid.get_edge(pos, dir) == Some(&false) {
+				// continue straight
+			} else {
+				dir = dir.rotate_left();
+			}
+
+			pos = pos + Offset::from_direction(dir);
+			path.push(dir);
+
+			max -= 10;
+			if max == 0 {
+				break;
+			}
+		}
 
 		// Just return the basic path for now
-		return BasicSnakeSolver.get_next_path(world);
+		self.prev_grid = Some(grid);
+		return path;
 	}
 }
 
-fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord) -> bool {
+fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) -> bool {
+	if pos == head {
+		return  true;
+	}
+
 	return match world.get_cell(pos) {
 		Some(Cell::Snake(_)) => true,
 		_ => false,
