@@ -24,6 +24,13 @@ impl Coord {
 			y: self.y + offset.0.y,
 		}
 	}
+
+	pub fn map_values(&self, f: impl Fn(i32) -> i32) -> Self {
+		Self {
+			x: f(self.x),
+			y: f(self.y),
+		}
+	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
