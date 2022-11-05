@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use crate::{snake::Direction, Offset};
 
+#[derive(Debug)]
 pub struct Path {
 	directions: VecDeque<Direction>,
 }

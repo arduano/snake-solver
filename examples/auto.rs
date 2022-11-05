@@ -43,10 +43,10 @@ impl eframe::App for MyApp<RandomSpanningTreeSolver> {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		egui::CentralPanel::default().show(ctx, |ui| {
 			match self.world.state() {
-				AutoPlayerState::Playing => {
+				AutoPlayerState::Playing | AutoPlayerState::Killed => {
 					let mut widget = SnakeWorldViewer::new(&self.world.world());
 
-					// widget = widget.with_path_overlay(self.world.current_path());
+					widget = widget.with_path_overlay(self.world.current_path());
 
 					if let Some(grid) = &self.world.solver.prev_grid {
 						widget = widget.with_bools_edges_grid_overlay(grid);
@@ -57,9 +57,6 @@ impl eframe::App for MyApp<RandomSpanningTreeSolver> {
 				AutoPlayerState::Finished => {
 					ui.heading("Finished");
 				}
-				AutoPlayerState::Killed => {
-					ui.heading("Killed");
-				}
 			}
 
 			ui.horizontal(|ui| {
@@ -67,8 +64,10 @@ impl eframe::App for MyApp<RandomSpanningTreeSolver> {
 				ui.add(egui::Slider::new(&mut self.speed, 1..=10000));
 			});
 
-			for _ in 0..self.speed {
-				self.world.step();
+			if ctx.input().key_pressed(egui::Key::Space) {
+				for _ in 0..self.speed {
+					self.world.step();
+				}
 			}
 
 			ctx.request_repaint();

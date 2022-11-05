@@ -3,8 +3,7 @@ use eframe::egui::{self, Response, Sense, Widget};
 use crate::{
 	auto::Path,
 	grid_graph::GridGraph,
-	snake::{self, Direction, SnakeWorld},
-	solvers::random_spanning_tree::Edge,
+	snake::{Direction, SnakeWorld},
 	Coord, Offset,
 };
 
@@ -132,15 +131,27 @@ impl Widget for SnakeWorldViewer<'_> {
 				for y in 0..bools_edges_grid.size() {
 					let coord = Coord::new_usize(x, y);
 					for dir in Direction::each() {
-						let offset = Offset::from_direction(dir);
-						let other_coord = coord + offset;
+						// let offset = Offset::from_direction(dir);
+						// let other_coord = coord + offset;
+
+						// if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
+						// 	let start = get_coord_vec2(coord);
+						// 	let end = get_coord_vec2(other_coord);
+						// 	painter.add(egui::Shape::line_segment(
+						// 		[start, end],
+						// 		egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 255)),
+						// 	));
+						// }
 
 						if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
-							let start = get_coord_vec2(coord);
-							let end = get_coord_vec2(other_coord);
+							let start = coord + Offset::from_direction(dir);
+							let end = start + Offset::from_direction(dir.rotate_left());
+
+							let start = get_coord_vec2(start);
+							let end = get_coord_vec2(end);
 							painter.add(egui::Shape::line_segment(
 								[start, end],
-								egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 255)),
+								egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 255, 255)),
 							));
 						}
 					}
