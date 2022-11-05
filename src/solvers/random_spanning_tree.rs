@@ -8,15 +8,13 @@ use crate::{
 use super::{basic::BasicSnakeSolver, SnakeSolver};
 
 pub struct RandomSpanningTreeSolver {
-	pub prev_tree: Option<Vec<Edge>>,
 	pub prev_grid: Option<GridGraph<bool>>,
 }
 
 impl RandomSpanningTreeSolver {
 	pub fn new() -> Self {
 		Self {
-			prev_tree: None,
-			prev_grid: None,
+			prev_grid: None
 		}
 	}
 }
@@ -29,12 +27,6 @@ pub struct Edge {
 
 impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
-		let mut path = Path::new();
-
-		let mut current_coord = world.snake_head_coord();
-
-		let mut total_vertexes = 0; // number of nodes in the network
-
 		// Create a random directed graph of edges
 		let mut edges = Vec::<Edge>::new();
 		for x in (1..world.size() - 2).step_by(2) {
@@ -45,7 +37,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					continue;
 				}
 
-				let mut has_connection = false;
 				for off_x in 0..=1 {
 					for off_y in 0..=1 {
 						if off_x == 0 && off_y == 0 {
@@ -71,13 +62,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 							b,
 							weight: rand::random(),
 						});
-						has_connection = true;
-						total_vertexes += 1;
 					}
-				}
-
-				if has_connection {
-					total_vertexes += 1;
 				}
 			}
 		}
@@ -86,8 +71,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		// Generate the minimum spanning tree from edges
 		let mut visited = Vec::<Coord>::new();
-		let mut tree = Vec::<Edge>::new();
-
 		let mut grid = GridGraph::<bool>::new(world.size() as usize, false);
 
 		// Mark the start point for the spanning tree
@@ -164,8 +147,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						true,
 					);
 
-					tree.push(wall);
-
 					updated = true;
 					continue;
 				}
@@ -174,8 +155,10 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 		}
 
-		self.prev_tree = Some(tree);
 		self.prev_grid = Some(grid);
+
+		let mut current_coord = world.snake_head_coord();
+		let mut path = Path::new();
 
 		// Just return the basic path for now
 		return BasicSnakeSolver.get_next_path(world);
