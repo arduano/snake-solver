@@ -32,6 +32,24 @@ impl Direction {
 			Self::Right => Self::Left,
 		}
 	}
+
+	pub fn rotate_left(&self) -> Self {
+		match self {
+			Self::Up => Self::Left,
+			Self::Down => Self::Right,
+			Self::Left => Self::Down,
+			Self::Right => Self::Up,
+		}
+	}
+
+	pub fn rotate_right(&self) -> Self {
+		match self {
+			Self::Up => Self::Right,
+			Self::Down => Self::Left,
+			Self::Left => Self::Up,
+			Self::Right => Self::Down,
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,6 +63,7 @@ pub struct SnakeWorld {
 	snake_length: u32,
 	head_coord: Coord,
 	food_coord: Coord,
+	prev_direction: Option<Direction>,
 	cells: Array2D<Cell>,
 }
 
@@ -59,6 +78,7 @@ impl SnakeWorld {
 			snake_length: 5,
 			head_coord,
 			food_coord: Coord::new_i32(-1, -1),
+			prev_direction: None,
 			cells,
 		};
 
@@ -86,6 +106,8 @@ impl SnakeWorld {
 				self.cells
 					.set(new_head_coord, Cell::Snake(self.snake_length));
 				self.cull_tail();
+
+				self.prev_direction = Some(direction);
 				SnakeResult::Stepped
 			}
 
@@ -97,6 +119,7 @@ impl SnakeWorld {
 					.set(new_head_coord, Cell::Snake(self.snake_length));
 				self.cull_tail();
 
+				self.prev_direction = Some(direction);
 				if self.spawn_food() {
 					SnakeResult::Stepped
 				} else {
