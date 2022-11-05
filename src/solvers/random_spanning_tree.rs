@@ -29,8 +29,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
 		// Create a random directed graph of edges
 		let mut edges = Vec::<Edge>::new();
-		for x in (1..world.size() - 2).step_by(2) {
-			for y in (1..world.size() - 2).step_by(2) {
+		for x in (1..world.size() - 1).step_by(2) {
+			for y in (1..world.size() - 1).step_by(2) {
 				// Is location A valid?
 				let a = Coord::new_usize(x, y);
 				if check_obstruction(world, a, world.snake_head_coord()) {
@@ -125,14 +125,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						pos.y -= 1;
 					}
 
-					grid.set_edge(
-						pos,
-						match vertical {
-							true => Direction::Right,
-							false => Direction::Down,
-						},
-						true,
-					);
+					set_grid_edge(&mut grid, pos, vertical);
 
 					if vertical {
 						pos.y += 1;
@@ -140,14 +133,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 						pos.x += 1;
 					}
 
-					grid.set_edge(
-						pos,
-						match vertical {
-							true => Direction::Right,
-							false => Direction::Down,
-						},
-						true,
-					);
+					set_grid_edge(&mut grid, pos, vertical);
 
 					updated = true;
 					continue;
@@ -163,19 +149,18 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		let mut dir = match world.prev_direction() {
 			Some(v) => v,
 			None => {
-				if grid.get_edge(pos, Direction::Right) == Some(&false) {
+				if grid.get_edge(pos, Direction::Right) == Some(&true) {
+					Direction::Up
+				} else if grid.get_edge(pos, Direction::Down) == Some(&true) {
 					Direction::Right
-				} else if grid.get_edge(pos, Direction::Down) == Some(&false) {
-					Direction::Down
-				} else if grid.get_edge(pos, Direction::Left) == Some(&false) {
-					Direction::Left
 				} else {
 					Direction::Right
 				}
 			}
 		};
 
-		let mut max = 10;
+		let mut max = world.size()*world.size();
+		let mut trailing = false;
 		loop {
 			match world.get_cell(pos) {
 				Some(Cell::Food) => {break;}
@@ -183,18 +168,37 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 
 			let right = dir.rotate_right();
-			if grid.get_edge(pos, right) == Some(&false) {
-				dir = right;
-			} else if grid.get_edge(pos, dir) == Some(&false) {
-				// continue straight
-			} else {
+			if grid.get_edge(pos, dir) == None {
+				dir = dir.rotate_right();
+			} else if grid.get_edge(pos, right) == Some(&true) {
+				if grid.get_edge(pos, dir) == Some(&true) {
+					dir = dir.rotate_left();
+				}
+				trailing = true;
+			} else if grid.get_edge(pos, dir) == Some(&true) {
 				dir = dir.rotate_left();
+			} else {
+				if trailing {
+					dir = dir.rotate_right();
+				} else {
+					let nx = pos + Offset::from_direction(dir);
+					if let Some(&Cell::Snake(_)) = world.get_cell(nx) {
+						dir = dir.rotate_right();
+					}
+
+					let nx = pos + Offset::from_direction(dir);
+					if let Some(&Cell::Snake(_)) = world.get_cell(nx) {
+						dir = dir.rotate_left().rotate_left();
+					}
+
+					trailing = false;
+				}
 			}
 
 			pos = pos + Offset::from_direction(dir);
 			path.push(dir);
 
-			max -= 10;
+			max -= 1;
 			if max == 0 {
 				break;
 			}
@@ -206,6 +210,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	}
 }
 
+
+
 fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) -> bool {
 	if pos == head {
 		return  true;
@@ -215,4 +221,16 @@ fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) 
 		Some(Cell::Snake(_)) => true,
 		_ => false,
 	};
+}
+
+
+fn set_grid_edge(grid: &mut GridGraph::<bool>, pos: Coord, vertical: bool) {
+	grid.set_edge(
+		pos,
+		match vertical {
+			true => Direction::Right,
+			false => Direction::Down,
+		},
+		true,
+	);
 }
