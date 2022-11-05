@@ -10,7 +10,7 @@ use crate::{
 pub struct SnakeWorldViewer<'a> {
 	snake_world: &'a SnakeWorld,
 	overlay_path: Option<&'a Path>,
-	bools_edges_grid: Option<&'a GridGraph<bool>>,
+	bools_edges_grid: Vec<(&'a GridGraph<bool>, egui::Color32)>,
 }
 
 impl<'a> SnakeWorldViewer<'a> {
@@ -18,7 +18,7 @@ impl<'a> SnakeWorldViewer<'a> {
 		Self {
 			snake_world,
 			overlay_path: None,
-			bools_edges_grid: None,
+			bools_edges_grid: Vec::new(),
 		}
 	}
 
@@ -27,8 +27,12 @@ impl<'a> SnakeWorldViewer<'a> {
 		self
 	}
 
-	pub fn with_bools_edges_grid_overlay(mut self, bools_edges_grid: &'a GridGraph<bool>) -> Self {
-		self.bools_edges_grid = Some(bools_edges_grid);
+	pub fn with_bools_edges_grid_overlay(
+		mut self,
+		bools_edges_grid: &'a GridGraph<bool>,
+		color: egui::Color32,
+	) -> Self {
+		self.bools_edges_grid.push((bools_edges_grid, color));
 		self
 	}
 }
@@ -131,7 +135,7 @@ impl Widget for SnakeWorldViewer<'_> {
 			);
 		}
 
-		if let Some(bools_edges_grid) = &self.bools_edges_grid {
+		for (bools_edges_grid, color) in self.bools_edges_grid.iter() {
 			for x in 0..bools_edges_grid.size() {
 				for y in 0..bools_edges_grid.size() {
 					let coord = Coord::new_usize(x, y);
@@ -151,7 +155,7 @@ impl Widget for SnakeWorldViewer<'_> {
 							let end = get_coord_vec2(end);
 							painter.add(egui::Shape::line_segment(
 								[start, end],
-								egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 255)),
+								egui::Stroke::new(1.0, *color),
 							));
 						}
 					}

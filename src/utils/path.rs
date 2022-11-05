@@ -39,4 +39,8 @@ impl Path {
 
 		first.chain(rest)
 	}
+
+	pub fn iter_directions(&self) -> impl '_ + Iterator<Item = Direction> {
+		self.directions.iter().copied()
+	}
 }

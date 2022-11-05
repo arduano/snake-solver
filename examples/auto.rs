@@ -1,6 +1,9 @@
 use snake_solver::{
 	auto::{AutoPlayerState, AutoSnakePlayer},
-	solvers::{random_spanning_tree::RandomSpanningTreeSolver, SnakeSolver},
+	solvers::{
+		random_spanning_tree::RandomSpanningTreeSolver,
+		snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver,
+	},
 	ui::SnakeWorldViewer,
 };
 
@@ -21,7 +24,7 @@ fn main() {
 	eframe::run_native(
 		"Auto snake game",
 		options,
-		Box::new(|_cc| Box::new(MyApp::new(RandomSpanningTreeSolver::new()))),
+		Box::new(|_cc| Box::new(MyApp::new(SnakeSpanningTreeSolver::new(GRID_SIZE as usize)))),
 	);
 }
 
@@ -39,7 +42,7 @@ impl<SS: SnakeSolver> MyApp<SS> {
 	}
 }
 
-impl eframe::App for MyApp<RandomSpanningTreeSolver> {
+impl eframe::App for MyApp<SnakeSpanningTreeSolver> {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		egui::CentralPanel::default().show(ctx, |ui| {
 			match self.world.state() {
@@ -48,9 +51,15 @@ impl eframe::App for MyApp<RandomSpanningTreeSolver> {
 
 					widget = widget.with_path_overlay(self.world.current_path());
 
-					if let Some(grid) = &self.world.solver.prev_grid {
-						widget = widget.with_bools_edges_grid_overlay(grid);
-					}
+					widget = widget
+						.with_bools_edges_grid_overlay(
+							&self.world.solver.prev_grid,
+							egui::Color32::from_rgb(0, 0, 255),
+						)
+						.with_bools_edges_grid_overlay(
+							&self.world.solver.snake_grid,
+							egui::Color32::from_rgb(0, 255, 255),
+						);
 
 					ui.add(widget);
 				}
