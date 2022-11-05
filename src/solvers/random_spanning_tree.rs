@@ -13,9 +13,7 @@ pub struct RandomSpanningTreeSolver {
 
 impl RandomSpanningTreeSolver {
 	pub fn new() -> Self {
-		Self {
-			prev_grid: None
-		}
+		Self { prev_grid: None }
 	}
 }
 
@@ -80,10 +78,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		let mut grid = GridGraph::<bool>::new(world.size() as usize, false);
 
 		// Mark the start point for the spanning tree
-		let start = Coord::new_i32(
-			food.x - (food.x % 2)+1,
-			food.y - (food.y % 2)+1
-		);
+		let start = Coord::new_i32(food.x - (food.x % 2) + 1, food.y - (food.y % 2) + 1);
 		println!("{},{}", start.x, start.y);
 		visited.push(start);
 
@@ -129,7 +124,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 					}
 
 					let vertical = wall.a.y != wall.b.y;
-					let mut pos = Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
+					let mut pos =
+						Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
 					if vertical {
 						pos.x -= 1;
 					} else {
@@ -154,7 +150,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 		}
 
-
 		let mut path = Path::new();
 		let mut pos = world.snake_head_coord();
 		let mut dir = match world.prev_direction() {
@@ -170,11 +165,13 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 			}
 		};
 
-		let mut max = world.size()*world.size();
+		let mut max = world.size() * world.size();
 		let mut trailing = false;
 		loop {
 			match world.get_cell(pos) {
-				Some(Cell::Food) => {break;}
+				Some(Cell::Food) => {
+					break;
+				}
 				_ => {}
 			}
 
@@ -221,11 +218,9 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	}
 }
 
-
-
 fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) -> bool {
 	if pos == head {
-		return  true;
+		return true;
 	}
 
 	return match world.get_cell(pos) {
@@ -234,8 +229,7 @@ fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) 
 	};
 }
 
-
-fn set_grid_edge(grid: &mut GridGraph::<bool>, pos: Coord, vertical: bool) {
+fn set_grid_edge(grid: &mut GridGraph<bool>, pos: Coord, vertical: bool) {
 	grid.set_edge(
 		pos,
 		match vertical {
