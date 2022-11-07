@@ -42,24 +42,15 @@ impl<SS: SnakeSolver> MyApp<SS> {
 	}
 }
 
-impl eframe::App for MyApp<SnakeSpanningTreeSolver> {
+impl<SS: SnakeSolver> eframe::App for MyApp<SS> {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		egui::CentralPanel::default().show(ctx, |ui| {
 			match self.world.state() {
 				AutoPlayerState::Playing | AutoPlayerState::Killed => {
 					let mut widget = SnakeWorldViewer::new(&self.world.world());
-
 					widget = widget.with_path_overlay(self.world.current_path());
 
-					widget = widget
-						.with_bools_edges_grid_overlay(
-							&self.world.solver.prev_grid,
-							egui::Color32::from_rgb(0, 0, 255),
-						)
-						.with_bools_edges_grid_overlay(
-							&self.world.solver.snake_grid,
-							egui::Color32::from_rgb(0, 255, 255),
-						);
+					widget = self.world.solver.decorate_widget(widget);
 
 					ui.add(widget);
 				}

@@ -41,6 +41,26 @@ impl<T> GridGraph<T> {
 		self.cells.set(self.get_edge_coord(coord, dir), value);
 	}
 
+	pub fn try_set_edge(&mut self, coord: Coord, dir: Direction, value: T) -> bool {
+		let edge_coord = self.get_edge_coord(coord, dir);
+		if self.cells.is_in_bounds(edge_coord) {
+			self.cells.set(edge_coord, value);
+			true
+		} else {
+			false
+		}
+	}
+
+	pub fn try_set_cell(&mut self, coord: Coord, value: T) -> bool {
+		let cell_coord = self.get_cell_coord(coord);
+		if self.cells.is_in_bounds(cell_coord) {
+			self.cells.set(cell_coord, value);
+			true
+		} else {
+			false
+		}
+	}
+
 	pub fn is_in_bounds(&self, coord: Coord) -> bool {
 		let edge_coord = self.get_cell_coord(coord);
 		self.cells.is_in_bounds(edge_coord)

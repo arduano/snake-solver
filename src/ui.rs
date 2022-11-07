@@ -1,6 +1,7 @@
 use eframe::egui::{self, Response, Sense, Widget};
 
 use crate::{
+	array2d::Array2D,
 	auto::Path,
 	grid_graph::GridGraph,
 	snake::{Direction, SnakeWorld},
@@ -11,6 +12,7 @@ pub struct SnakeWorldViewer<'a> {
 	snake_world: &'a SnakeWorld,
 	overlay_path: Option<&'a Path>,
 	bools_edges_grid: Vec<(&'a GridGraph<bool>, egui::Color32)>,
+	pathfinding_grid: Option<&'a Array2D<u32>>,
 }
 
 impl<'a> SnakeWorldViewer<'a> {
@@ -19,6 +21,7 @@ impl<'a> SnakeWorldViewer<'a> {
 			snake_world,
 			overlay_path: None,
 			bools_edges_grid: Vec::new(),
+			pathfinding_grid: None,
 		}
 	}
 
@@ -33,6 +36,11 @@ impl<'a> SnakeWorldViewer<'a> {
 		color: egui::Color32,
 	) -> Self {
 		self.bools_edges_grid.push((bools_edges_grid, color));
+		self
+	}
+
+	pub fn with_pathfinding_grid_overlay(mut self, pathfinding_grid: &'a Array2D<u32>) -> Self {
+		self.pathfinding_grid = Some(pathfinding_grid);
 		self
 	}
 }
@@ -58,6 +66,37 @@ impl Widget for SnakeWorldViewer<'_> {
 
 		// Add background
 		mesh.add_colored_rect(rect, egui::Color32::from_rgb(0, 0, 0));
+
+		if let Some(pathfinding) = self.pathfinding_grid {
+			// Find the maximum value
+			let mut max_value = 0;
+			for x in 0..pathfinding.size() {
+				for y in 0..pathfinding.size() {
+					let value = pathfinding.get(Coord::new_usize(x, y)).unwrap();
+					if *value > max_value {
+						max_value = *value;
+					}
+				}
+			}
+
+			// Draw rectangles
+			for x in 0..pathfinding.size() {
+				for y in 0..pathfinding.size() {
+					let value = pathfinding.get(Coord::new_usize(x, y)).unwrap();
+					let color = egui::Color32::from_rgb(
+						(255.0 * (*value as f32 / max_value as f32)) as u8,
+						0,
+						0,
+					);
+					let coord = Coord::new_usize(x, y);
+					let rect = egui::Rect::from_min_size(
+						get_coord_vec2(coord),
+						egui::vec2(CELL_SIZE, CELL_SIZE),
+					);
+					mesh.add_colored_rect(rect, color);
+				}
+			}
+		}
 
 		// Add food
 		mesh.add_colored_rect(

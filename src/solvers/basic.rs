@@ -1,6 +1,7 @@
 use crate::{
 	auto::Path,
 	snake::{Cell, Direction},
+	ui::SnakeWorldViewer,
 	Offset,
 };
 
@@ -52,5 +53,9 @@ impl SnakeSolver for BasicSnakeSolver {
 		}
 
 		path
+	}
+
+	fn decorate_widget<'a>(&'a self, widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
+		widget
 	}
 }

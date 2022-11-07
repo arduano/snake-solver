@@ -2,6 +2,7 @@ use crate::{
 	auto::Path,
 	grid_graph::GridGraph,
 	snake::{Cell, Direction},
+	ui::SnakeWorldViewer,
 	Coord, Offset,
 };
 
@@ -214,6 +215,17 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		// Just return the basic path for now
 		self.prev_grid = Some(grid);
 		return path;
+	}
+
+	fn decorate_widget<'a>(&'a self, widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
+		if let Some(prev_grid) = &self.prev_grid {
+			widget.with_bools_edges_grid_overlay(
+				prev_grid,
+				eframe::egui::Color32::from_rgb(0, 0, 255),
+			)
+		} else {
+			widget
+		}
 	}
 }
 
