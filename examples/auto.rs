@@ -70,6 +70,30 @@ impl<SS: SnakeSolver> eframe::App for MyApp<SS> {
 				}
 			}
 
+			if ctx.input().key_pressed(egui::Key::Num1) {
+				for _ in 0..(self.speed) {
+					self.world.step();
+				}
+			}
+
+			if ctx.input().key_pressed(egui::Key::Num2) {
+				for _ in 0..(self.speed * 10) {
+					self.world.step();
+				}
+			}
+
+			if ctx.input().key_pressed(egui::Key::Num3) {
+				for _ in 0..(self.speed * 100) {
+					self.world.step();
+				}
+			}
+
+			if ctx.input().key_pressed(egui::Key::Num4) {
+				for _ in 0..(self.speed * 1000) {
+					self.world.step();
+				}
+			}
+
 			ctx.request_repaint();
 		});
 	}

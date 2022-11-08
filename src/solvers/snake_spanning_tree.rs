@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+use rand::Rng;
+
 use crate::{
 	array2d::Array2D,
 	auto::Path,
@@ -9,10 +11,9 @@ use crate::{
 	Coord, Offset,
 };
 
-use super::{basic::BasicSnakeSolver, SnakeSolver};
+use super::SnakeSolver;
 
 pub struct SnakeSpanningTreeSolver {
-	pub prev_grid: GridGraph<bool>,
 	pub prev_pathfinding_grid: Array2D<u32>,
 	pub snake_grid: GridGraph<bool>,
 }
@@ -21,8 +22,8 @@ pub struct SnakeSpanningTreeSolver {
 enum SpanTreeEdgeType {
 	Free,
 	Wall,
+	CoveredByCurrentSnake,
 	CoveredByFutureSnake,
-	CoveredBySnake,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -33,10 +34,8 @@ enum GridStepKind {
 
 impl SpanTreeEdgeType {
 	fn is_free(&self) -> bool {
-		matches!(
-			self,
-			SpanTreeEdgeType::Free | SpanTreeEdgeType::CoveredByFutureSnake
-		)
+		use SpanTreeEdgeType::*;
+		matches!(self, Free | CoveredByCurrentSnake | CoveredByFutureSnake)
 	}
 
 	fn is_taken(&self) -> bool {
@@ -46,128 +45,7 @@ impl SpanTreeEdgeType {
 
 impl SnakeSpanningTreeSolver {
 	pub fn new(size: usize) -> Self {
-		// Create a random directed graph of edges
-		let mut edges = Vec::<Edge>::new();
-		for x in (1..size - 2).step_by(2) {
-			for y in (1..size - 2).step_by(2) {
-				// Is location A valid?
-				let a = Coord::new_usize(x, y);
-
-				for off_x in 0..=1 {
-					for off_y in 0..=1 {
-						if off_x == 0 && off_y == 0 {
-							continue;
-						}
-						if off_x == 1 && off_y == 1 {
-							continue;
-						}
-
-						// Is location A valid?
-						let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
-
-						edges.push(Edge {
-							a,
-							b,
-							weight: rand::random(),
-						});
-					}
-				}
-			}
-		}
-
-		edges.sort_by(|a, b| a.weight.partial_cmp(&b.weight).unwrap());
-
-		// Generate the minimum spanning tree from edges
-		let mut visited = Vec::<Coord>::new();
-		let mut grid = GridGraph::<bool>::new(size as usize, false);
-
-		// Mark the start point for the spanning tree
-		visited.push(edges[0].a);
-
-		// has not reached all vertexes
-		// & has not ran out of possible connections
-		let mut updated = true;
-		while updated {
-			updated = false;
-
-			let mut i = 0;
-			while i < edges.len() {
-				let edge = &edges[i];
-				let has_a = visited.contains(&edge.a);
-				let has_b = visited.contains(&edge.b);
-
-				// If the connection between these two nodes already exists
-				// Remove this option as a shorter path has already been taken
-				if has_a && has_b {
-					// remove edge
-					edges.remove(i);
-					updated = true;
-					continue;
-				}
-
-				// If this connection is new, and plausible from the current tree
-				// add this edge
-				if has_a || has_b {
-					// Remove the edge which is about to be added
-					let mut wall = edges.remove(i);
-
-					// Push the new node as visited
-					if !has_a {
-						visited.push(wall.a);
-					} else if !has_b {
-						visited.push(wall.b);
-					}
-
-					// Swap the edge direction to point existing -> new
-					if !has_a && has_b {
-						let t = wall.a;
-						wall.a = wall.b;
-						wall.b = t;
-					}
-
-					let vertical = wall.a.y != wall.b.y;
-					let mut pos =
-						Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
-					if vertical {
-						pos.x -= 1;
-					} else {
-						pos.y -= 1;
-					}
-
-					grid.set_edge(
-						pos,
-						match vertical {
-							true => Direction::Right,
-							false => Direction::Down,
-						},
-						true,
-					);
-
-					if vertical {
-						pos.y += 1;
-					} else {
-						pos.x += 1;
-					}
-
-					grid.set_edge(
-						pos,
-						match vertical {
-							true => Direction::Right,
-							false => Direction::Down,
-						},
-						true,
-					);
-
-					updated = true;
-					continue;
-				}
-
-				i += 1;
-			}
-		}
-
 		Self {
-			prev_grid: grid,
 			snake_grid: GridGraph::new(size as usize, false),
 			prev_pathfinding_grid: Array2D::new(size as usize, 0),
 		}
@@ -183,7 +61,6 @@ pub struct Edge {
 struct SnakeCalculator<'a> {
 	snake_spanning_tree: GridGraph<SpanTreeEdgeType>,
 	snake_world: &'a SnakeWorld,
-	current_snake_coord: Coord,
 	pathfinding_grid: Array2D<u32>,
 }
 
@@ -194,7 +71,6 @@ impl<'a> SnakeCalculator<'a> {
 				snake_world.size() as usize / 2,
 				SpanTreeEdgeType::Free,
 			),
-			current_snake_coord: snake_world.snake_head_coord(),
 			snake_world,
 			pathfinding_grid: Array2D::new(snake_world.size() as usize, 0),
 		}
@@ -211,20 +87,10 @@ impl<'a> SnakeCalculator<'a> {
 			let prev = current_pos + Offset::from_direction(dir);
 			let dir = dir.opposite();
 
-			let (clockwise, out) = get_valid_dirs_from_coord(prev);
+			let [clockwise, out] = get_valid_dirs_from_coord(prev);
 
 			let mut mark_edge = |coord: Coord, dir: Direction, kind: SpanTreeEdgeType| {
-				let meta_coord = coord.map_values(|v| (v + 1) / 2 - 1);
-
-				let meta_coord = match dir {
-					Direction::Left | Direction::Up => meta_coord,
-					Direction::Right | Direction::Down => meta_coord + Offset::new(1, 1),
-				};
-
-				let new_dir = match dir {
-					Direction::Left | Direction::Right => dir.rotate_left(),
-					Direction::Up | Direction::Down => dir.rotate_right(),
-				};
+				let (meta_coord, new_dir) = Self::calculate_inner_tree_coord(coord, dir);
 
 				self.snake_spanning_tree
 					.try_set_edge(meta_coord, new_dir, kind);
@@ -235,24 +101,13 @@ impl<'a> SnakeCalculator<'a> {
 				mark_edge(prev, clockwise, SpanTreeEdgeType::Wall);
 			}
 
+			// It didn't go clockwise therefore it intersected with a wall
 			if dir == clockwise {
-				mark_edge(prev, clockwise, SpanTreeEdgeType::CoveredBySnake);
+				mark_edge(prev, clockwise, SpanTreeEdgeType::CoveredByCurrentSnake);
 			}
 
 			current_pos = prev;
 		}
-	}
-
-	fn set_test_edge(&mut self) {
-		let (coord, dir) = Self::calculate_following_out_edge(Coord::new_i32(1, 1));
-		self.snake_spanning_tree
-			.try_set_edge(coord, dir, SpanTreeEdgeType::Wall);
-
-		let (coord, dir) = Self::calculate_following_out_edge(Coord::new_i32(1, 5));
-		self.snake_spanning_tree
-			.try_set_edge(coord, dir, SpanTreeEdgeType::Wall);
-
-		dbg!(self.can_walk_out_from(Coord::new_i32(1, 1)));
 	}
 
 	fn fill_pathfinding_grid(&mut self) {
@@ -264,10 +119,13 @@ impl<'a> SnakeCalculator<'a> {
 		while let Some((coord, dist)) = queue.pop_front() {
 			self.pathfinding_grid.set(coord, dist);
 
-			let (clockwise, out) = get_valid_dirs_from_coord(coord);
-			let reversed = [clockwise, out].into_iter().map(|dir| dir.opposite());
+			let [clockwise, out] = get_valid_dirs_from_coord(coord);
+			let items = [
+				(clockwise.opposite(), GridStepKind::Out),
+				(out.opposite(), GridStepKind::Clockwise),
+			];
 
-			for dir in reversed {
+			for (dir, kind) in items.into_iter() {
 				let next = coord + Offset::from_direction(dir);
 
 				let Some(cell) = self.snake_world.get_cell(next) else {
@@ -282,10 +140,24 @@ impl<'a> SnakeCalculator<'a> {
 					continue;
 				};
 
-				if current_val != 0 || current_val <= dist + 1 {
+				if current_val != 0 {
 					continue;
 				}
 
+				match kind {
+					GridStepKind::Clockwise => {
+						if !self.can_walk_clockwise_from(next) {
+							continue;
+						}
+					}
+					GridStepKind::Out => {
+						if !self.can_walk_out_from(next) {
+							continue;
+						}
+					}
+				}
+
+				self.pathfinding_grid.set(next, u32::MAX);
 				queue.push_back((next, dist + 1));
 			}
 		}
@@ -324,6 +196,126 @@ impl<'a> SnakeCalculator<'a> {
 		return false;
 	}
 
+	fn can_walk_clockwise_from(&self, coord: Coord) -> bool {
+		let [clockwise, _] = get_valid_dirs_from_coord(coord);
+		let (coord, dir) = Self::calculate_inner_tree_coord(coord, clockwise);
+
+		let connecting_edge = self.snake_spanning_tree.get_edge(coord, dir);
+		let result = match connecting_edge {
+			Some(edge) => edge.is_free(),
+			_ => true,
+		};
+
+		result
+	}
+
+	fn pathfind_and_grow(&mut self) -> Result<(), ()> {
+		println!("Started pathfinding");
+		let mut current = self.snake_world.snake_head_coord();
+
+		loop {
+			let current_value = *self.pathfinding_grid.get(current).unwrap();
+			if current_value == 1 {
+				break;
+			}
+
+			let [clockwise, out] = get_valid_dirs_from_coord(current);
+
+			let get_value_at = |dir: Direction| {
+				let coord = current + Offset::from_direction(dir);
+				self.pathfinding_grid
+					.get(coord)
+					.and_then(|&v| if v == 0 { None } else { Some(v) })
+			};
+
+			let clockwise_value = get_value_at(clockwise);
+			let out_value = get_value_at(out);
+
+			if clockwise_value == None && out_value == None {
+				println!("Reached a dead end when pathfinding");
+				return Err(());
+			}
+
+			let next_dir = if clockwise_value == None {
+				GridStepKind::Out
+			} else if out_value == None {
+				GridStepKind::Clockwise
+			} else if clockwise_value < out_value {
+				GridStepKind::Clockwise
+			} else if self.can_walk_out_from(current) {
+				GridStepKind::Out
+			} else {
+				GridStepKind::Clockwise
+			};
+
+			if next_dir == GridStepKind::Out {
+				let (coord, dir) = Self::calculate_following_out_edge(current);
+				self.snake_spanning_tree
+					.try_set_edge(coord, dir, SpanTreeEdgeType::Wall);
+			}
+
+			if next_dir == GridStepKind::Clockwise {
+				let (coord, dir) = Self::calculate_following_out_edge(current);
+				self.snake_spanning_tree.try_set_edge(
+					coord,
+					dir,
+					SpanTreeEdgeType::CoveredByFutureSnake,
+				);
+			}
+
+			let next_dir = match next_dir {
+				GridStepKind::Clockwise => clockwise,
+				GridStepKind::Out => out,
+			};
+
+			current = current + Offset::from_direction(next_dir);
+		}
+
+		let mut allow_covered = false;
+		// Seed the tree from here
+		'iter: loop {
+			for x in 0..self.snake_spanning_tree.size() {
+				for y in 0..self.snake_spanning_tree.size() {
+					let coord = Coord::new_usize(x, y);
+					if !self.is_spanning_tree_coord_taken(coord) {
+						continue;
+					}
+
+					for dir in Direction::each() {
+						if let Some(&edge) = self.snake_spanning_tree.get_edge(coord, dir) {
+							use SpanTreeEdgeType::*;
+							let free =
+								edge == Free || (allow_covered && edge == CoveredByFutureSnake);
+
+							if free {
+								let seed_coord = coord + Offset::from_direction(dir);
+								if !self.is_spanning_tree_coord_taken(seed_coord) {
+									self.snake_spanning_tree.set_edge(
+										coord,
+										dir,
+										SpanTreeEdgeType::Wall,
+									);
+
+									self.seed_tree_from(seed_coord);
+									continue 'iter;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			if !allow_covered {
+				allow_covered = true;
+				continue;
+			} else {
+				break;
+			}
+		}
+
+		Ok(())
+	}
+
 	fn calculate_inner_tree_coord(coord: Coord, dir: Direction) -> (Coord, Direction) {
 		let meta_coord = coord.map_values(|v| (v + 1) / 2 - 1);
 
@@ -342,61 +334,64 @@ impl<'a> SnakeCalculator<'a> {
 
 	fn calculate_following_out_edge(coord: Coord) -> (Coord, Direction) {
 		let meta_coord = coord.map_values(|v| v / 2);
-		let (_, out) = get_valid_dirs_from_coord(coord);
+		let [_, out] = get_valid_dirs_from_coord(coord);
 		(meta_coord, out)
 	}
 
-	// fn can_go_out_at(coord: Coord) -> bool {
-	// 	let meta_coord = coord.map_values(|v| (v + 1) / 2 - 1);
+	fn seed_tree_from(&mut self, coord: Coord) {
+		let mut stack = VecDeque::new();
+		let mut last_coord = coord;
 
-	// 	let meta_coord = match dir {
-	// 		Direction::Left | Direction::Up => meta_coord,
-	// 		Direction::Right | Direction::Down => meta_coord + Offset::new(1, 1),
-	// 	};
+		let mut possible_dirs = Vec::with_capacity(4);
+		stack.push_back(last_coord);
 
-	// 	let new_dir = match dir {
-	// 		Direction::Left | Direction::Right => dir.rotate_left(),
-	// 		Direction::Up | Direction::Down => dir.rotate_right(),
-	// 	};
+		loop {
+			let current_coord = last_coord;
 
-	// 	(meta_coord, new_dir)
-	// }
+			for dir in Direction::each() {
+				let next_coord = current_coord + Offset::from_direction(dir);
+				if !self.snake_spanning_tree.is_in_bounds(next_coord) {
+					continue;
+				}
 
-	fn get_wall(&self, coord: Coord, dir: Direction) -> SpanTreeEdgeType {
-		let (meta_coord, new_dir) = Self::calculate_inner_tree_coord(coord, dir);
-		*self
-			.snake_spanning_tree
-			.get_edge(meta_coord, new_dir)
-			.unwrap_or(&SpanTreeEdgeType::Free)
+				if !self.is_spanning_tree_coord_taken(next_coord) {
+					possible_dirs.push(dir);
+				}
+			}
+
+			if possible_dirs.len() == 0 {
+				last_coord = match stack.pop_back() {
+					Some(coord) => coord,
+					None => break,
+				};
+				continue;
+			}
+
+			let dir = possible_dirs[rand::thread_rng().gen_range(0..possible_dirs.len())];
+			// let dir = possible_dirs[0];
+			possible_dirs.clear();
+
+			let next_coord = current_coord + Offset::from_direction(dir);
+			stack.push_back(next_coord);
+			last_coord = next_coord;
+
+			self.snake_spanning_tree
+				.set_edge(current_coord, dir, SpanTreeEdgeType::Wall);
+		}
 	}
 
-	fn set_wall(&mut self, coord: Coord, dir: Direction, value: SpanTreeEdgeType) {
-		let (meta_coord, new_dir) = Self::calculate_inner_tree_coord(coord, dir);
-		self.snake_spanning_tree
-			.set_edge(meta_coord, new_dir, value);
+	fn is_spanning_tree_coord_taken(&self, coord: Coord) -> bool {
+		for dir in Direction::each() {
+			let edge = self.snake_spanning_tree.get_edge(coord, dir);
+			if let Some(edge) = edge {
+				if edge.is_taken() {
+					return true;
+				}
+			}
+		}
+
+		false
 	}
-
-	// fn is_wall_blocking(&mut self, coord: Coord, dir: Direction) {
-	// 	let (meta_coord, new_dir) = Self::calculate_inner_tree_coord(coord, dir);
-	// 	self.snake_spanning_tree
-	// 		.set_edge(meta_coord, new_dir, value);
-	// }
-
-	// fn can_move_clockwise(&mut self, coord: Coord, dir: Direction) {
-	// 	let (meta_coord, new_dir) = Self::calculate_inner_tree_coord(coord, dir);
-	// 	self.snake_spanning_tree
-	// 		.set_edge(meta_coord, new_dir, value);
-	// }
-
-	// fn can_move_from(&mut self, coord: Coord, dir: Direction) {
-	// 	let (meta_coord, new_dir) = Self::calculate_inner_tree_coord(coord, dir);
-	// 	self.snake_spanning_tree
-	// 		.set_edge(meta_coord, new_dir, value);
-	// }
-
-	// fn can_move(&mut self, dir: Direction) {
-	// 	self.can_move_from(self.current_snake_coord, dir);
-	// }
 
 	fn build_collision_grid_from_spanning_tree(&self) -> GridGraph<bool> {
 		let mut snake_grid = GridGraph::new(self.snake_world.size() as usize, false);
@@ -437,7 +432,7 @@ impl<'a> SnakeCalculator<'a> {
 	}
 }
 
-fn get_valid_dirs_from_coord(coord: Coord) -> (Direction, Direction) {
+fn get_valid_dirs_from_coord(coord: Coord) -> [Direction; 2] {
 	let twos_coords = [coord.x % 2, coord.y % 2];
 	let [clockwise, out] = match twos_coords {
 		[0, 0] => [Direction::Right, Direction::Up],
@@ -447,20 +442,38 @@ fn get_valid_dirs_from_coord(coord: Coord) -> (Direction, Direction) {
 		_ => unreachable!(),
 	};
 
-	(clockwise, out)
+	[clockwise, out]
 }
 
 impl SnakeSolver for SnakeSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &SnakeWorld) -> Path {
 		let mut calculator = SnakeCalculator::new(world);
 		calculator.trace_current_snake_and_mark_edges();
-		calculator.fill_pathfinding_grid();
 		// calculator.set_test_edge();
+		calculator.fill_pathfinding_grid();
+
+		let result = calculator.pathfind_and_grow();
+		if result.is_err() {
+			println!("Pathfinding failed, returning a killing path");
+
+			self.snake_grid = calculator.build_collision_grid_from_spanning_tree();
+			self.prev_pathfinding_grid = calculator.pathfinding_grid;
+
+			let mut path = Path::new();
+			path.push(
+				world
+					.calculate_snake_path_from_head()
+					.iter_directions()
+					.nth(0)
+					.unwrap(),
+			);
+			return path;
+		}
 
 		self.snake_grid = calculator.build_collision_grid_from_spanning_tree();
 		self.prev_pathfinding_grid = calculator.pathfinding_grid;
 
-		let path = build_path_from_collision_grid(&self.prev_grid, &world);
+		let path = build_path_from_collision_grid(&self.snake_grid, &world);
 		path
 	}
 
@@ -470,10 +483,11 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 				&self.snake_grid,
 				eframe::egui::Color32::from_rgb(0, 255, 255),
 			)
-			.with_bools_edges_grid_overlay(
-				&self.prev_grid,
-				eframe::egui::Color32::from_rgb(0, 0, 255),
-			)
+			// .with_bools_edges_grid_overlay(
+			// 	&self.prev_grid,
+			// 	eframe::egui::Color32::from_rgb(0, 0, 255),
+			// )
+			.with_pathfinding_grid_overlay(&self.prev_pathfinding_grid)
 	}
 }
 
@@ -486,7 +500,7 @@ fn build_path_from_collision_grid(grid: &GridGraph<bool>, world: &SnakeWorld) ->
 			break;
 		}
 
-		let (clockwise, out) = get_valid_dirs_from_coord(current);
+		let [clockwise, out] = get_valid_dirs_from_coord(current);
 
 		let next_dir = if grid.get_edge(current, clockwise) == Some(&false) {
 			clockwise
