@@ -14,8 +14,9 @@ use crate::{
 use super::SnakeSolver;
 
 pub struct SnakeSpanningTreeSolver {
-	pub prev_pathfinding_grid: Array2D<u32>,
-	pub snake_grid: GridGraph<bool>,
+	pub prev_pathfinding_grid: Option<Array2D<u32>>,
+	pub snake_grid: Option<GridGraph<bool>>,
+	iteratively_repath_after: Option<usize>,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -32,6 +33,12 @@ enum GridStepKind {
 	Out,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+enum SnakePathfindResult {
+	Success,
+	SuccessWithPathOverride,
+}
+
 impl SpanTreeEdgeType {
 	fn is_free(&self) -> bool {
 		use SpanTreeEdgeType::*;
@@ -44,10 +51,11 @@ impl SpanTreeEdgeType {
 }
 
 impl SnakeSpanningTreeSolver {
-	pub fn new(size: usize) -> Self {
+	pub fn new(iteratively_repath_after: Option<usize>) -> Self {
 		Self {
-			snake_grid: GridGraph::new(size as usize, false),
-			prev_pathfinding_grid: Array2D::new(size as usize, 0),
+			snake_grid: None,
+			prev_pathfinding_grid: None,
+			iteratively_repath_after,
 		}
 	}
 }
@@ -209,8 +217,7 @@ impl<'a> SnakeCalculator<'a> {
 		result
 	}
 
-	fn pathfind_and_grow(&mut self) -> Result<(), ()> {
-		println!("Started pathfinding");
+	fn pathfind_and_grow(&mut self) -> Result<SnakePathfindResult, ()> {
 		let mut current = self.snake_world.snake_head_coord();
 
 		loop {
@@ -272,6 +279,9 @@ impl<'a> SnakeCalculator<'a> {
 		}
 
 		let mut allow_covered = false;
+
+		let mut seeded_covered_edge = false;
+
 		// Seed the tree from here
 		'iter: loop {
 			for x in 0..self.snake_spanning_tree.size() {
@@ -297,6 +307,11 @@ impl<'a> SnakeCalculator<'a> {
 									);
 
 									self.seed_tree_from(seed_coord);
+
+									if allow_covered {
+										seeded_covered_edge = true;
+									}
+
 									continue 'iter;
 								}
 							}
@@ -313,7 +328,11 @@ impl<'a> SnakeCalculator<'a> {
 			}
 		}
 
-		Ok(())
+		if seeded_covered_edge {
+			Ok(SnakePathfindResult::SuccessWithPathOverride)
+		} else {
+			Ok(SnakePathfindResult::Success)
+		}
 	}
 
 	fn calculate_inner_tree_coord(coord: Coord, dir: Direction) -> (Coord, Direction) {
@@ -453,41 +472,61 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 		calculator.fill_pathfinding_grid();
 
 		let result = calculator.pathfind_and_grow();
-		if result.is_err() {
-			println!("Pathfinding failed, returning a killing path");
 
-			self.snake_grid = calculator.build_collision_grid_from_spanning_tree();
-			self.prev_pathfinding_grid = calculator.pathfinding_grid;
+		let collision_grid = calculator.build_collision_grid_from_spanning_tree();
 
-			let mut path = Path::new();
-			path.push(
-				world
-					.calculate_snake_path_from_head()
-					.iter_directions()
-					.nth(0)
-					.unwrap(),
-			);
-			return path;
-		}
+		let path = match result {
+			Err(()) => {
+				println!("Pathfinding failed, returning a killing path");
 
-		self.snake_grid = calculator.build_collision_grid_from_spanning_tree();
-		self.prev_pathfinding_grid = calculator.pathfinding_grid;
+				let mut path = Path::new();
+				path.push(
+					world
+						.calculate_snake_path_from_head()
+						.iter_directions()
+						.nth(0)
+						.unwrap(),
+				);
+				path
+			}
+			Ok(kind) => {
+				let path = build_path_from_collision_grid(&collision_grid, &world);
 
-		let path = build_path_from_collision_grid(&self.snake_grid, &world);
+				if kind == SnakePathfindResult::Success {
+					path
+				} else if let Some(count) = self.iteratively_repath_after {
+					let mut clipped_path = Path::new();
+
+					for dir in path.iter_directions().take(count) {
+						clipped_path.push(dir);
+					}
+
+					clipped_path
+				} else {
+					path
+				}
+			}
+		};
+
+		self.snake_grid = Some(collision_grid);
+		self.prev_pathfinding_grid = Some(calculator.pathfinding_grid);
+
 		path
 	}
 
-	fn decorate_widget<'a>(&'a self, widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
-		widget
-			.with_bools_edges_grid_overlay(
-				&self.snake_grid,
+	fn decorate_widget<'a>(&'a self, mut widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
+		if let Some(snake_grid) = &self.snake_grid {
+			widget = widget.with_bools_edges_grid_overlay(
+				snake_grid,
 				eframe::egui::Color32::from_rgb(0, 255, 255),
-			)
-			// .with_bools_edges_grid_overlay(
-			// 	&self.prev_grid,
-			// 	eframe::egui::Color32::from_rgb(0, 0, 255),
-			// )
-			.with_pathfinding_grid_overlay(&self.prev_pathfinding_grid)
+			);
+		}
+
+		if let Some(prev_pathfinding_grid) = &self.prev_pathfinding_grid {
+			widget = widget.with_pathfinding_grid_overlay(prev_pathfinding_grid);
+		}
+
+		widget
 	}
 }
 

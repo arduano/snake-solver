@@ -21,7 +21,7 @@ fn main() {
 	eframe::run_native(
 		"Auto snake game",
 		options,
-		Box::new(|_cc| Box::new(MyApp::new(SnakeSpanningTreeSolver::new(GRID_SIZE as usize)))),
+		Box::new(|_cc| Box::new(MyApp::new(SnakeSpanningTreeSolver::new(None)))),
 	);
 }
 
