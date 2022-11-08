@@ -1,9 +1,6 @@
 use snake_solver::{
 	auto::{AutoPlayerState, AutoSnakePlayer},
-	solvers::{
-		random_spanning_tree::RandomSpanningTreeSolver,
-		snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver,
-	},
+	solvers::{snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver},
 	ui::SnakeWorldViewer,
 };
 

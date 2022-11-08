@@ -1,16 +1,10 @@
 use indicatif::ParallelProgressIterator;
 use rayon::prelude::*;
 use snake_solver::{
-	auto::{AutoPlayerState, AutoSnakePlayer},
+	auto::AutoSnakePlayer,
 	snake::SnakeResult,
-	solvers::{
-		random_spanning_tree::RandomSpanningTreeSolver,
-		snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver,
-	},
-	ui::SnakeWorldViewer,
+	solvers::{snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver},
 };
-
-use eframe::egui::{self};
 
 fn make_solver() -> impl SnakeSolver {
 	SnakeSpanningTreeSolver::new(None)
@@ -57,6 +51,9 @@ fn main() {
 		let min = results[0];
 		let max = results[results.len() - 1];
 		let avg = results.iter().sum::<u64>() as f64 / results.len() as f64;
-		println!("Size: {}, Min: {}, Avg: {}, Max: {}", sizes[i], min, avg, max);
+		println!(
+			"Size: {}, Min: {}, Avg: {}, Max: {}",
+			sizes[i], min, avg, max
+		);
 	}
 }

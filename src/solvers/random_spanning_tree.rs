@@ -1,7 +1,5 @@
 extern crate rand;
 
-use rand::{seq::SliceRandom, thread_rng, Rng};
-
 use crate::{
 	auto::Path,
 	grid_graph::GridGraph,
@@ -52,7 +50,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 }
 
 fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
-	let food = world.food_coord();
+	let _food = world.food_coord();
 	let head = world.snake_head_coord();
 
 	// let mut mid_point_off = food.get_offset(head);
