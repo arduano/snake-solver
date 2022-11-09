@@ -28,12 +28,16 @@ pub struct Edge {
 
 impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
-		let edges = generate_edges(world);
-		let grid = generate_grid_network(world, edges);
-		let path = generate_path(world, &grid);
 
-		// Just return the basic path for now
+		let grid = match self.prev_grid.take() {
+			None => generate_grid_network(world, generate_edges(world)),
+			Some(grid) => grid
+		};
+
+
+		let path = generate_path(world, &grid);
 		self.prev_grid = Some(grid);
+
 		return path;
 	}
 
@@ -53,48 +57,34 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	let _food = world.food_coord();
 	let head = world.snake_head_coord();
 
-	// let mut mid_point_off = food.get_offset(head);
-	// mid_point_off.x /= 2;
-	// mid_point_off.y /= 2;
-	// let mid_point = food + mid_point_off;
-
 	// Create a random directed graph of edges
 	let mut edges = Vec::<Edge>::new();
 	for x in (1..world.size() - 1).step_by(2) {
 		for y in (1..world.size() - 1).step_by(2) {
-			// Is location A valid?
 			let a = Coord::new_usize(x, y);
-			if check_obstruction(world, a, world.snake_head_coord()) {
-				continue;
-			}
-
 			for (off_x, off_y) in [(0, 1), (1, 0)] {
-				// Unable to reach B
-				let t = Coord::new_usize(x + off_x, y + off_y);
-				if check_obstruction(world, t, world.snake_head_coord()) {
-					continue;
-				}
-
-				// Is location A valid?
 				let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
-				if check_obstruction(world, b, world.snake_head_coord()) {
-					continue;
-				}
-
-				// distance from food as percentage
-
-				// let dist_food = food.get_offset(t).length() as f32 / world.size() as f32;
-				let dist_head = head.get_offset(t).length() as f32 / world.size() as f32;
-				// let dist_mid = mid_point.get_offset(t).length() as f32 / world.size() as f32;
 
 				edges.push(Edge {
 					a,
 					b,
-					weight: dist_head * 0.1 + rand::random::<f32>(),
+					weight: rand::random::<f32>(),
 				});
 			}
 		}
 	}
+
+	let size = world.size();
+	edges.push(Edge {
+		a: Coord::new_usize(size-1, size - 3),
+		b: Coord::new_usize(size-1, size - 1),
+		weight: rand::random::<f32>()
+	});
+	edges.push(Edge {
+		a: Coord::new_usize(size-3, size - 1),
+		b: Coord::new_usize(size-1, size - 1),
+		weight: rand::random::<f32>()
+	});
 
 	edges.sort_by(|a, b| a.weight.partial_cmp(&b.weight).unwrap());
 
@@ -189,6 +179,7 @@ fn generate_grid_network(
 fn generate_path(world: &crate::snake::SnakeWorld, grid: &GridGraph<bool>) -> Path {
 	// Find path
 	let mut path = Path::new();
+	let start = world.snake_head_coord();
 	let mut pos = world.snake_head_coord();
 	let mut dir = match world.prev_direction() {
 		Some(v) => v,
@@ -205,13 +196,12 @@ fn generate_path(world: &crate::snake::SnakeWorld, grid: &GridGraph<bool>) -> Pa
 
 	let mut max = world.size() * world.size();
 	let mut trailing = false;
+	let mut first = true;
 	loop {
-		match world.get_cell(pos) {
-			Some(Cell::Food) => {
-				break;
-			}
-			_ => {}
+		if (!first && pos == start) {
+			break;
 		}
+		first = false;
 
 		let right = dir.rotate_right();
 		if grid.get_edge(pos, dir) == None {
@@ -265,7 +255,7 @@ fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) 
 }
 
 fn set_grid_edge(grid: &mut GridGraph<bool>, pos: Coord, vertical: bool) {
-	grid.set_edge(
+	grid.try_set_edge(
 		pos,
 		match vertical {
 			true => Direction::Right,
