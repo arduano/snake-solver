@@ -3,7 +3,7 @@ use rayon::prelude::*;
 use snake_solver::{
 	auto::AutoSnakePlayer,
 	snake::SnakeResult,
-	solvers::{basic::BasicSnakeSolver, snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver},
+	solvers::{basic::BasicSnakeSolver, snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver, random_spanning_tree::RandomSpanningTreeSolver},
 };
 
 fn run_benches<SS: SnakeSolver>(sizes: &[usize], make_solver: impl Fn() -> SS) -> Vec<u64> {
@@ -60,7 +60,7 @@ fn run_all_benches<SS: SnakeSolver>(name: &str, make_solver: impl Send + Sync + 
 fn main() {
 	println!();
 	run_all_benches("Brute force:", || BasicSnakeSolver);
-	// run_all_benches("Random hamiltonian:", || RandomSpanningTreeSolver::new());
+	run_all_benches("Random hamiltonian:", || RandomSpanningTreeSolver::new());
 	println!();
 	run_all_benches("Pathfinding hamiltonian:", || {
 		SnakeSpanningTreeSolver::new(None)
