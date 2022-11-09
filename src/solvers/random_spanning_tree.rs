@@ -3,9 +3,9 @@ extern crate rand;
 use crate::{
 	auto::Path,
 	grid_graph::GridGraph,
-	snake::{Cell, Direction},
+	snake::{Direction},
 	ui::SnakeWorldViewer,
-	Coord, Offset,
+	Coord,
 };
 
 use super::{SnakeSolver, utils::build_path_from_collision_grid};
@@ -55,7 +55,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	let _food = world.food_coord();
-	let head = world.snake_head_coord();
 
 	// Create a random directed graph of edges
 	let mut edges = Vec::<Edge>::new();
