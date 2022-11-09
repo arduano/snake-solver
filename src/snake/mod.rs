@@ -2,6 +2,7 @@ use rand::Rng;
 
 use crate::array2d::Array2D;
 
+use crate::direction::Direction;
 use crate::{auto::Path, Coord, Offset};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -9,47 +10,6 @@ pub enum Cell {
 	Empty,
 	Snake(u32),
 	Food,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Direction {
-	Up,
-	Down,
-	Left,
-	Right,
-}
-
-impl Direction {
-	pub fn each() -> impl Iterator<Item = Self> {
-		[Self::Up, Self::Down, Self::Left, Self::Right].into_iter()
-	}
-
-	pub fn opposite(&self) -> Self {
-		match self {
-			Self::Up => Self::Down,
-			Self::Down => Self::Up,
-			Self::Left => Self::Right,
-			Self::Right => Self::Left,
-		}
-	}
-
-	pub fn rotate_left(&self) -> Self {
-		match self {
-			Self::Up => Self::Left,
-			Self::Down => Self::Right,
-			Self::Left => Self::Down,
-			Self::Right => Self::Up,
-		}
-	}
-
-	pub fn rotate_right(&self) -> Self {
-		match self {
-			Self::Up => Self::Right,
-			Self::Down => Self::Left,
-			Self::Left => Self::Up,
-			Self::Right => Self::Down,
-		}
-	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,13 +31,13 @@ impl SnakeWorld {
 	pub fn new(size: usize) -> Self {
 		let mut cells = Array2D::new(size, Cell::Empty);
 
-		let head_coord = Coord::new_usize(size / 2, size / 2);
+		let head_coord = Coord::new(size / 2, size / 2);
 		cells.set(head_coord, Cell::Snake(0));
 
 		let mut world = Self {
 			snake_length: 5,
 			head_coord,
-			food_coord: Coord::new_i32(-1, -1),
+			food_coord: Coord::new(-1, -1),
 			prev_direction: None,
 			cells,
 		};
@@ -133,7 +93,7 @@ impl SnakeWorld {
 		// TODO: Optimize this
 		for x in 0..self.cells.size() {
 			for y in 0..self.cells.size() {
-				let coord = Coord::new_usize(x, y);
+				let coord = Coord::new(x, y);
 				if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
 					if *iteration > 0 {
 						self.cells.set(coord, Cell::Snake(iteration - 1));
@@ -149,13 +109,13 @@ impl SnakeWorld {
 		if (self.snake_length as usize) < self.cells.count() * 7 / 8 {
 			// If more than an eighth of the grid is empty, randomly probe until empty cell found
 			let mut rng = rand::thread_rng();
-			let mut coord = Coord::new_usize(
+			let mut coord = Coord::new(
 				rng.gen_range(0..self.cells.size()),
 				rng.gen_range(0..self.cells.size()),
 			);
 
 			while self.cells.get(coord) != Some(&Cell::Empty) {
-				coord = Coord::new_usize(
+				coord = Coord::new(
 					rng.gen_range(0..self.cells.size()),
 					rng.gen_range(0..self.cells.size()),
 				);
@@ -167,7 +127,7 @@ impl SnakeWorld {
 			let mut cells = Vec::new();
 			for x in 0..self.cells.size() {
 				for y in 0..self.cells.size() {
-					let coord = Coord::new_usize(x, y);
+					let coord = Coord::new(x, y);
 					if self.cells.get(coord) == Some(&Cell::Empty) {
 						cells.push(coord);
 					}
@@ -234,7 +194,7 @@ impl SnakeWorld {
 
 		loop {
 			for direction in Direction::each() {
-				let coord = pos + Offset::from_direction(direction);
+				let coord = pos.go_towards(direction);
 				if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
 					let smaller = *iteration < current_value;
 					if smaller {

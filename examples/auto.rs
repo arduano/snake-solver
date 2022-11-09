@@ -1,15 +1,18 @@
 use snake_solver::{
 	auto::{AutoPlayerState, AutoSnakePlayer},
-	solvers::{snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver},
+	solvers::{
+		snake_spanning_tree::{JitterKind, SnakeSpanningTreeSolver},
+		SnakeSolver,
+	},
 	ui::SnakeWorldViewer,
 };
 
 use eframe::egui::{self};
 
-const GRID_SIZE: i32 = 80;
+const GRID_SIZE: i32 = 40;
 
 fn main() {
-	let width: f32 = GRID_SIZE as f32 * 10.0 + 20.0;
+	let width: f32 = SnakeWorldViewer::calculate_size_for_world_size(GRID_SIZE as usize) + 20.0;
 
 	let extra_height = 20.0;
 
@@ -21,7 +24,11 @@ fn main() {
 	eframe::run_native(
 		"Auto snake game",
 		options,
-		Box::new(|_cc| Box::new(MyApp::new(SnakeSpanningTreeSolver::new(Some(1))))),
+		Box::new(|_cc| {
+			Box::new(MyApp::new(SnakeSpanningTreeSolver::new(
+				JitterKind::JitterWhenIndirect(1),
+			)))
+		}),
 	);
 }
 

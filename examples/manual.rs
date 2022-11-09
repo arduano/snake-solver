@@ -1,11 +1,11 @@
-use snake_solver::{snake::SnakeWorld, ui::SnakeWorldViewer, *};
+use snake_solver::{direction::Direction, snake::SnakeWorld, ui::SnakeWorldViewer};
 
 use eframe::egui::{self};
 
 const GRID_SIZE: i32 = 80;
 
 fn main() {
-	let width: f32 = GRID_SIZE as f32 * 10.0 + 20.0;
+	let width: f32 = SnakeWorldViewer::calculate_size_for_world_size(GRID_SIZE as usize) + 20.0;
 	let options = eframe::NativeOptions {
 		min_window_size: Some(egui::vec2(width, width)),
 		..Default::default()
@@ -34,13 +34,13 @@ impl eframe::App for MyApp {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		// Sense arrow keys
 		if ctx.input().key_pressed(egui::Key::ArrowUp) {
-			self.snake_world.step_snake(snake::Direction::Up);
+			self.snake_world.step_snake(Direction::Up);
 		} else if ctx.input().key_pressed(egui::Key::ArrowDown) {
-			self.snake_world.step_snake(snake::Direction::Down);
+			self.snake_world.step_snake(Direction::Down);
 		} else if ctx.input().key_pressed(egui::Key::ArrowLeft) {
-			self.snake_world.step_snake(snake::Direction::Left);
+			self.snake_world.step_snake(Direction::Left);
 		} else if ctx.input().key_pressed(egui::Key::ArrowRight) {
-			self.snake_world.step_snake(snake::Direction::Right);
+			self.snake_world.step_snake(Direction::Right);
 		}
 
 		egui::CentralPanel::default()

@@ -1,8 +1,9 @@
 use crate::{
+	direction::Direction,
 	grid_graph::GridGraph,
 	path::Path,
-	snake::{Cell, Direction, SnakeWorld},
-	Coord, Offset,
+	snake::{Cell, SnakeWorld},
+	Coord,
 };
 
 pub fn get_valid_dirs_from_coord(coord: Coord) -> [Direction; 2] {
@@ -35,7 +36,7 @@ pub fn build_path_from_collision_grid(grid: &GridGraph<bool>, world: &SnakeWorld
 			out
 		};
 
-		current = current + Offset::from_direction(next_dir);
+		current = current.go_towards(next_dir);
 		path.push(next_dir);
 	}
 

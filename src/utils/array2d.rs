@@ -2,6 +2,7 @@
 
 use crate::Coord;
 
+#[derive(Clone)]
 pub struct Array2D<T> {
 	size: usize,
 	data: Box<[T]>,
@@ -50,6 +51,20 @@ impl<T> Array2D<T> {
 
 	pub fn count(&self) -> usize {
 		self.size * self.size
+	}
+
+	pub fn iter_all_coords(&self) -> impl Iterator<Item = Coord> {
+		let size = self.size;
+		(0..size as i32).flat_map(move |x| (0..size as i32).map(move |y| Coord { x, y }))
+	}
+
+	pub fn fill(&mut self, value: T)
+	where
+		T: Clone,
+	{
+		for i in 0..self.count() {
+			self.data[i] = value.clone();
+		}
 	}
 }
 

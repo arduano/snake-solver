@@ -1,14 +1,8 @@
 extern crate rand;
 
-use crate::{
-	auto::Path,
-	grid_graph::GridGraph,
-	snake::{Direction},
-	ui::SnakeWorldViewer,
-	Coord,
-};
+use crate::{auto::Path, direction::Direction, grid_graph::GridGraph, ui::SnakeWorldViewer, Coord};
 
-use super::{SnakeSolver, utils::build_path_from_collision_grid};
+use super::{utils::build_path_from_collision_grid, SnakeSolver};
 
 pub struct RandomSpanningTreeSolver {
 	pub prev_grid: Option<GridGraph<bool>>,
@@ -28,13 +22,12 @@ pub struct Edge {
 
 impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
-
 		// Generate the graph over every second grid square with minimum weights
 		// Then convert those edges into a MST
 		// And convert that MST into a collision space
 		let grid = match self.prev_grid.take() {
 			None => generate_grid_network(world, generate_edges(world)),
-			Some(grid) => grid
+			Some(grid) => grid,
 		};
 
 		let path = build_path_from_collision_grid(&grid, world);
@@ -42,7 +35,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 
 		return path;
 	}
-
 
 	// UI code for drawing the collision grid
 	fn decorate_widget<'a>(&'a self, widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
@@ -57,7 +49,6 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	}
 }
 
-
 // Generate all of the random edges for a given world
 fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	let _food = world.food_coord();
@@ -67,9 +58,9 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	let mut edges = Vec::<Edge>::new();
 	for x in (1..world.size() - 1).step_by(2) {
 		for y in (1..world.size() - 1).step_by(2) {
-			let a = Coord::new_usize(x, y);
+			let a = Coord::new(x, y);
 			for (off_x, off_y) in [(0, 1), (1, 0)] {
-				let b = Coord::new_usize(x + off_x * 2, y + off_y * 2);
+				let b = Coord::new(x + off_x * 2, y + off_y * 2);
 
 				edges.push(Edge {
 					a,
@@ -84,14 +75,14 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	// Because the above loop omitted them for simplicity
 	let size = world.size();
 	edges.push(Edge {
-		a: Coord::new_usize(size-1, size - 3),
-		b: Coord::new_usize(size-1, size - 1),
-		weight: rand::random::<f32>()
+		a: Coord::new(size - 1, size - 3),
+		b: Coord::new(size - 1, size - 1),
+		weight: rand::random::<f32>(),
 	});
 	edges.push(Edge {
-		a: Coord::new_usize(size-3, size - 1),
-		b: Coord::new_usize(size-1, size - 1),
-		weight: rand::random::<f32>()
+		a: Coord::new(size - 3, size - 1),
+		b: Coord::new(size - 1, size - 1),
+		weight: rand::random::<f32>(),
 	});
 
 	// Sort the edges by weight for the later MST calculations
@@ -115,7 +106,7 @@ fn generate_grid_network(
 	let mut grid = GridGraph::<bool>::new(world.size() as usize, false);
 
 	// Mark the start point for the spanning tree
-	let start = Coord::new_i32(food.x - (food.x % 2) + 1, food.y - (food.y % 2) + 1);
+	let start = Coord::new(food.x - (food.x % 2) + 1, food.y - (food.y % 2) + 1);
 	visited.push(start);
 
 	// has not reached all vertexes
@@ -162,7 +153,7 @@ fn generate_grid_network(
 				// Convert from the graph coordinates to grid coordinates
 				let vertical = wall.a.y != wall.b.y;
 				let mut pos =
-					Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
+					Coord::new(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
 				if vertical {
 					pos.x -= 1;
 				} else {
@@ -190,7 +181,6 @@ fn generate_grid_network(
 
 	return grid;
 }
-
 
 fn set_grid_edge(grid: &mut GridGraph<bool>, pos: Coord, vertical: bool) {
 	grid.try_set_edge(

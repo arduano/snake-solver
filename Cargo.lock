@@ -895,6 +895,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "maybe-owned"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4facc753ae494aeb6e3c22f839b158aebd4f9270f55cd3c79906c45476c47ab4"
+
+[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1480,6 +1486,7 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "indicatif",
+ "maybe-owned",
  "rand",
  "rayon",
 ]

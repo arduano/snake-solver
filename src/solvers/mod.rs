@@ -7,5 +7,6 @@ mod utils;
 
 pub trait SnakeSolver {
 	fn get_next_path(&mut self, world: &SnakeWorld) -> Path;
+
 	fn decorate_widget<'a>(&'a self, widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a>;
 }

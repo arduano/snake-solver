@@ -1,4 +1,4 @@
-use crate::{array2d::Array2D, snake::Direction, Coord, Offset};
+use crate::{array2d::Array2D, direction::Direction, Coord};
 
 pub struct GridGraph<T> {
 	size: usize,
@@ -22,7 +22,7 @@ impl<T> GridGraph<T> {
 	}
 
 	fn get_edge_coord(&self, coord: Coord, dir: Direction) -> Coord {
-		self.get_cell_coord(coord) + Offset::from_direction(dir)
+		self.get_cell_coord(coord).go_towards(dir)
 	}
 
 	pub fn get_cell(&self, coord: Coord) -> Option<&T> {
@@ -61,6 +61,13 @@ impl<T> GridGraph<T> {
 		}
 	}
 
+	pub fn fill(&mut self, value: T)
+	where
+		T: Clone,
+	{
+		self.cells.fill(value);
+	}
+
 	pub fn is_in_bounds(&self, coord: Coord) -> bool {
 		let edge_coord = self.get_cell_coord(coord);
 		self.cells.is_in_bounds(edge_coord)
@@ -69,6 +76,11 @@ impl<T> GridGraph<T> {
 	pub fn is_in_bounds_with_direction(&self, coord: Coord, direction: Direction) -> bool {
 		let edge_coord = self.get_edge_coord(coord, direction);
 		self.cells.is_in_bounds(edge_coord)
+	}
+
+	pub fn iter_all_coords(&self) -> impl Iterator<Item = Coord> {
+		let size = self.size;
+		(0..size as i32).flat_map(move |x| (0..size as i32).map(move |y| Coord { x, y }))
 	}
 
 	pub fn size(&self) -> usize {

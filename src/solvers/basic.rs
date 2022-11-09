@@ -1,9 +1,4 @@
-use crate::{
-	auto::Path,
-	snake::{Cell, Direction},
-	ui::SnakeWorldViewer,
-	Offset,
-};
+use crate::{auto::Path, direction::Direction, snake::Cell, ui::SnakeWorldViewer, Offset};
 
 use super::SnakeSolver;
 
@@ -15,15 +10,18 @@ impl SnakeSolver for BasicSnakeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
 		let mut path = Path::new();
 
+		// Start at the head
 		let mut current_coord = world.snake_head_coord();
 
 		loop {
 			let current_cell = world.get_cell(current_coord);
 
+			// If we reached food, then we're done
 			if current_cell == Some(&Cell::Food) {
 				break;
 			}
 
+			// Compare the current coordinate to the zigzag rules and decide which direction to go
 			let next_dir = if current_coord.x == 0 {
 				if current_coord.y == 0 {
 					Direction::Right
@@ -48,6 +46,7 @@ impl SnakeSolver for BasicSnakeSolver {
 				}
 			};
 
+			// Add the next direction to the path
 			path.push(next_dir);
 			current_coord += Offset::from_direction(next_dir);
 		}

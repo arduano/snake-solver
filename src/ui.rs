@@ -1,21 +1,23 @@
 use eframe::egui::{self, Response, Sense, Widget};
+use maybe_owned::MaybeOwned;
 
 use crate::{
-	array2d::Array2D,
-	auto::Path,
-	grid_graph::GridGraph,
-	snake::{Direction, SnakeWorld},
-	Coord, Offset,
+	array2d::Array2D, auto::Path, direction::Direction, grid_graph::GridGraph, snake::SnakeWorld,
+	Coord,
 };
 
 pub struct SnakeWorldViewer<'a> {
 	snake_world: &'a SnakeWorld,
-	overlay_path: Option<&'a Path>,
-	bools_edges_grid: Vec<(&'a GridGraph<bool>, egui::Color32)>,
-	pathfinding_grid: Option<&'a Array2D<u32>>,
+	overlay_path: Option<MaybeOwned<'a, Path>>,
+	bools_edges_grid: Vec<(MaybeOwned<'a, GridGraph<bool>>, egui::Color32)>,
+	pathfinding_grid: Option<MaybeOwned<'a, Array2D<u32>>>,
 }
 
 impl<'a> SnakeWorldViewer<'a> {
+	pub fn calculate_size_for_world_size(world_size: usize) -> f32 {
+		world_size as f32 * CELL_SIZE
+	}
+
 	pub fn new(snake_world: &'a SnakeWorld) -> Self {
 		Self {
 			snake_world,
@@ -25,22 +27,25 @@ impl<'a> SnakeWorldViewer<'a> {
 		}
 	}
 
-	pub fn with_path_overlay(mut self, path: &'a Path) -> Self {
-		self.overlay_path = Some(path);
+	pub fn with_path_overlay(mut self, path: impl Into<MaybeOwned<'a, Path>>) -> Self {
+		self.overlay_path = Some(path.into());
 		self
 	}
 
 	pub fn with_bools_edges_grid_overlay(
 		mut self,
-		bools_edges_grid: &'a GridGraph<bool>,
+		bools_edges_grid: impl Into<MaybeOwned<'a, GridGraph<bool>>>,
 		color: egui::Color32,
 	) -> Self {
-		self.bools_edges_grid.push((bools_edges_grid, color));
+		self.bools_edges_grid.push((bools_edges_grid.into(), color));
 		self
 	}
 
-	pub fn with_pathfinding_grid_overlay(mut self, pathfinding_grid: &'a Array2D<u32>) -> Self {
-		self.pathfinding_grid = Some(pathfinding_grid);
+	pub fn with_pathfinding_grid_overlay(
+		mut self,
+		pathfinding_grid: impl Into<MaybeOwned<'a, Array2D<u32>>>,
+	) -> Self {
+		self.pathfinding_grid = Some(pathfinding_grid.into());
 		self
 	}
 }
@@ -72,7 +77,7 @@ impl Widget for SnakeWorldViewer<'_> {
 			let mut max_value = 0;
 			for x in 0..pathfinding.size() {
 				for y in 0..pathfinding.size() {
-					let value = pathfinding.get(Coord::new_usize(x, y)).unwrap();
+					let value = pathfinding.get(Coord::new(x, y)).unwrap();
 					if *value > max_value {
 						max_value = *value;
 					}
@@ -82,13 +87,13 @@ impl Widget for SnakeWorldViewer<'_> {
 			// Draw rectangles
 			for x in 0..pathfinding.size() {
 				for y in 0..pathfinding.size() {
-					let value = pathfinding.get(Coord::new_usize(x, y)).unwrap();
+					let value = pathfinding.get(Coord::new(x, y)).unwrap();
 					let color = egui::Color32::from_rgb(
 						(255.0 * (*value as f32 / max_value as f32)) as u8,
 						0,
 						0,
 					);
-					let coord = Coord::new_usize(x, y);
+					let coord = Coord::new(x, y);
 					let rect = egui::Rect::from_min_size(
 						get_coord_vec2(coord),
 						egui::vec2(CELL_SIZE, CELL_SIZE),
@@ -177,10 +182,10 @@ impl Widget for SnakeWorldViewer<'_> {
 		for (bools_edges_grid, color) in self.bools_edges_grid.iter() {
 			for x in 0..bools_edges_grid.size() {
 				for y in 0..bools_edges_grid.size() {
-					let coord = Coord::new_usize(x, y);
+					let coord = Coord::new(x, y);
 					for dir in [Direction::Right, Direction::Down].into_iter() {
 						if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
-							let start = coord + Offset::from_direction(dir);
+							let start = coord.go_towards(dir);
 
 							let next_dir = match dir {
 								Direction::Right => dir.rotate_right(),
@@ -188,7 +193,7 @@ impl Widget for SnakeWorldViewer<'_> {
 								_ => unreachable!(),
 							};
 
-							let end = start + Offset::from_direction(next_dir);
+							let end = start.go_towards(next_dir);
 
 							let start = get_coord_vec2(start);
 							let end = get_coord_vec2(end);

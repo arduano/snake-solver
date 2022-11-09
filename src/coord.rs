@@ -1,6 +1,22 @@
 #![allow(dead_code)]
 
-use crate::snake::Direction;
+use crate::direction::Direction;
+
+pub trait IntoCoordVal {
+	fn into_coord_val(self) -> i32;
+}
+
+impl IntoCoordVal for i32 {
+	fn into_coord_val(self) -> i32 {
+		self
+	}
+}
+
+impl IntoCoordVal for usize {
+	fn into_coord_val(self) -> i32 {
+		self as i32
+	}
+}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Coord {
@@ -9,14 +25,10 @@ pub struct Coord {
 }
 
 impl Coord {
-	pub fn new_i32(x: i32, y: i32) -> Self {
-		Self { x, y }
-	}
-
-	pub fn new_usize(x: usize, y: usize) -> Self {
+	pub fn new<T: IntoCoordVal>(x: T, y: T) -> Self {
 		Self {
-			x: x as i32,
-			y: y as i32,
+			x: x.into_coord_val(),
+			y: y.into_coord_val(),
 		}
 	}
 
@@ -37,6 +49,10 @@ impl Coord {
 			y: f(self.y),
 		}
 	}
+
+	pub fn go_towards(&self, direction: Direction) -> Self {
+		*self + Offset::from_direction(direction)
+	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -44,7 +60,7 @@ pub struct Offset(Coord);
 
 impl Offset {
 	pub fn new(x: i32, y: i32) -> Self {
-		Self(Coord::new_i32(x, y))
+		Self(Coord::new(x, y))
 	}
 
 	pub fn zero() -> Self {

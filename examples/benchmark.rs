@@ -3,7 +3,12 @@ use rayon::prelude::*;
 use snake_solver::{
 	auto::AutoSnakePlayer,
 	snake::SnakeResult,
-	solvers::{basic::BasicSnakeSolver, snake_spanning_tree::SnakeSpanningTreeSolver, SnakeSolver, random_spanning_tree::RandomSpanningTreeSolver},
+	solvers::{
+		basic::BasicSnakeSolver,
+		random_spanning_tree::RandomSpanningTreeSolver,
+		snake_spanning_tree::{JitterKind, SnakeSpanningTreeSolver},
+		SnakeSolver,
+	},
 };
 
 fn run_benches<SS: SnakeSolver>(sizes: &[usize], make_solver: impl Fn() -> SS) -> Vec<u64> {
@@ -14,6 +19,10 @@ fn run_benches<SS: SnakeSolver>(sizes: &[usize], make_solver: impl Fn() -> SS) -
 		let mut total_time = 0;
 		loop {
 			let result = world.step();
+
+			// if world.world().snake_length() > (size * size / 10) as u32 {
+			// 	break;
+			// }
 
 			match result {
 				SnakeResult::Finished => break,
@@ -58,15 +67,17 @@ fn run_all_benches<SS: SnakeSolver>(name: &str, make_solver: impl Send + Sync + 
 }
 
 fn main() {
-	println!();
 	run_all_benches("Brute force:", || BasicSnakeSolver);
 	run_all_benches("Random hamiltonian:", || RandomSpanningTreeSolver::new());
-	println!();
 	run_all_benches("Pathfinding hamiltonian:", || {
-		SnakeSpanningTreeSolver::new(None)
+		SnakeSpanningTreeSolver::new(JitterKind::NoJitter)
 	});
-	println!();
-	run_all_benches("Pathfinding hamiltonian with repathing:", || {
-		SnakeSpanningTreeSolver::new(Some(10))
-	});
+	run_all_benches(
+		"Pathfinding hamiltonian with repathing with 10 step jitter:",
+		|| SnakeSpanningTreeSolver::new(JitterKind::JitterWhenIndirect(10)),
+	);
+	run_all_benches(
+		"Pathfinding hamiltonian with repathing 1 step jitter:",
+		|| SnakeSpanningTreeSolver::new(JitterKind::JitterWhenIndirect(1)),
+	);
 }
