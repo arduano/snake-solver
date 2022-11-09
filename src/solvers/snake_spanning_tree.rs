@@ -42,6 +42,7 @@ impl SnakeSpanningTreeSolver {
 }
 
 impl SnakeSolver for SnakeSpanningTreeSolver {
+	/// Grab the next path from the solver.
 	fn get_next_path(&mut self, world: &SnakeWorld) -> Path {
 		// Fetch the cached data structures to avoid re-allocations
 		let spanning_tree = self
@@ -100,7 +101,7 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 		// Handle the growth result. We choose different step counts depending on the result and the jitter setting.
 		let take = match grow_result {
 			SnakeGrowResult::Success => {
-				if let JitterKind::JitterWhenIndirect(num) = self.jitter_setting {
+				if let JitterKind::JitterAlways(num) = self.jitter_setting {
 					Some(num)
 				} else {
 					None

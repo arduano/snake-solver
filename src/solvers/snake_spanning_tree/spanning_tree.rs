@@ -53,6 +53,7 @@ impl SpanningTree {
 	pub fn trace_current_snake_and_mark_edges(&mut self, world: &SnakeWorld) {
 		let mut current_pos = world.snake_head_coord();
 
+		// We iterate over all of the snake's directions from the head
 		for dir in world.calculate_snake_path_from_head().iter_directions() {
 			let prev = current_pos.go_towards(dir);
 			let dir = dir.opposite();
@@ -64,13 +65,15 @@ impl SpanningTree {
 				self.try_set_edge(meta_coord, new_dir, kind);
 			};
 
-			// It didn't go clockwise therefore it intersected with a wall
+			// We check the taken direction below and compare it to the clockwise rules.
+
 			if dir == out {
+				// It didn't go clockwise, therefore it intersected with a wall
 				mark_edge(prev, clockwise, SpanTreeEdgeType::Wall);
 			}
 
-			// It didn't go clockwise therefore it intersected with a wall
 			if dir == clockwise {
+				// It went clockwise, therefore it there shouldn't be a wall there
 				mark_edge(prev, clockwise, SpanTreeEdgeType::CoveredByCurrentSnake);
 			}
 
@@ -78,26 +81,33 @@ impl SpanningTree {
 		}
 	}
 
+	/// Grow the spanning tree across the entire grid. First attempt to not grow over edges
+	/// that are `CoveredByCurrentSnake`, and if there's still holes remaining after then
+	/// grow over `CoveredByFutureSnake` edges. `SnakeGrowResult` reflects whether
+	/// the spanning tree was grown over any `CoveredByFutureSnake` edges.
 	pub fn grow_spanning_tree(&mut self) -> SnakeGrowResult {
 		let mut allow_covered = false;
 
 		let mut seeded_covered_edge = false;
 
-		// Seed the tree from here
 		'iter: loop {
+			// We loop over each coodinate and direction to find a taken coordinate with a neighbouring untaken coordinate
 			for coord in self.iter_all_coords() {
-				if !self.is_tree_coord_taken(coord) {
+				if !self.is_tree_node_taken(coord) {
 					continue;
 				}
 
 				for dir in Direction::each() {
 					if let Some(&edge) = self.get_edge(coord, dir) {
 						use SpanTreeEdgeType::*;
+						// The edge is free if it's free or it's covered and we're overriding covered edges.
 						let free = edge == Free || (allow_covered && edge == CoveredByFutureSnake);
 
 						if free {
 							let seed_coord = coord.go_towards(dir);
-							if !self.is_tree_coord_taken(seed_coord) {
+							// Check if the node is actually taken
+							if !self.is_tree_node_taken(seed_coord) {
+								// Seed the tree if all the conditions are met
 								self.seed_tree_from(coord, dir);
 
 								if allow_covered {
@@ -111,6 +121,7 @@ impl SpanningTree {
 				}
 			}
 
+			// We iterate twice, once without allowing covered edges, and once with.
 			if !allow_covered {
 				allow_covered = true;
 				continue;
@@ -126,29 +137,36 @@ impl SpanningTree {
 		}
 	}
 
+	/// Seed the tree from a node and a direction. This begins a depth first search minimum spanning
+	/// tree seeding process, and fills all the available space in the region.
 	fn seed_tree_from(&mut self, coord: Coord, dir: Direction) {
 		self.set_edge(coord, dir, SpanTreeEdgeType::Wall);
 
-		let mut stack = VecDeque::new();
+		// Leave a small vector for caching directions later
+		let mut possible_dirs = Vec::with_capacity(4);
+
 		let mut last_coord = coord.go_towards(dir);
 
-		let mut possible_dirs = Vec::with_capacity(4);
+		// We track the depth first search previous locations with a stack
+		let mut stack = VecDeque::new();
 		stack.push_back(last_coord);
 
 		loop {
 			let current_coord = last_coord;
 
+			// Check all directions and add potential valid directions to the possible_dirs vector
 			for dir in Direction::each() {
 				let next_coord = current_coord.go_towards(dir);
 				if !self.is_in_bounds(next_coord) {
 					continue;
 				}
 
-				if !self.is_tree_coord_taken(next_coord) {
+				if !self.is_tree_node_taken(next_coord) {
 					possible_dirs.push(dir);
 				}
 			}
 
+			// If we reached a dead end, step backwards
 			if possible_dirs.len() == 0 {
 				last_coord = match stack.pop_back() {
 					Some(coord) => coord,
@@ -157,10 +175,12 @@ impl SpanningTree {
 				continue;
 			}
 
+			// Pick a random direction from the list
 			let dir = possible_dirs[rand::thread_rng().gen_range(0..possible_dirs.len())];
 			// let dir = possible_dirs[0];
 			possible_dirs.clear();
 
+			// Go towards the chosen direction
 			let next_coord = current_coord.go_towards(dir);
 			stack.push_back(next_coord);
 			last_coord = next_coord;
@@ -173,28 +193,24 @@ impl SpanningTree {
 	/// node is taken and the connecting edge isn't, which implies that the new connection may cause a loop.
 	pub fn can_walk_out_from(&self, coord: Coord) -> bool {
 		let (coord, dir) = calculate_following_out_edge(coord);
+
+		// Check if the outwards edge is taken
 		let connecting_edge = self.graph.get_edge(coord, dir);
 		let connecting_edge_taken = match connecting_edge {
 			Some(edge) => edge.is_taken(),
 			_ => false,
 		};
 
+		// Check if the outwards edge's next node is taken by checking all of the edges on the node
 		let next_cell = coord.go_towards(dir);
-		let other_dirs = [dir, dir.rotate_left(), dir.rotate_right()];
-		let mut other_edges = other_dirs
-			.iter()
-			.map(|dir| self.graph.get_edge(next_cell, *dir));
-		let next_cell_taken = other_edges.any(|edge| match edge {
-			None => false,
-			Some(edge) => edge.is_taken(),
-		});
+		let next_cell_taken = self.is_tree_node_taken(next_cell);
 
-		// If the next cell isn't taken, it's ok
+		// If the next node isn't taken, it's ok
 		if !next_cell_taken {
 			return true;
 		}
 
-		// If the next cell is taken but the connecting edge is also taken, it's ok
+		// If the next node is taken but the connecting edge is also taken, it's ok
 		if connecting_edge_taken {
 			return true;
 		}
@@ -202,6 +218,7 @@ impl SpanningTree {
 		return false;
 	}
 
+	// Given a coordinate, check if the there's an edge blocking clockwise motion
 	pub fn can_walk_clockwise_from(&self, coord: Coord) -> bool {
 		let [clockwise, _] = get_valid_dirs_from_coord(coord);
 		let (coord, dir) = calculate_inner_tree_coord(coord, clockwise);
@@ -215,7 +232,8 @@ impl SpanningTree {
 		result
 	}
 
-	pub fn is_tree_coord_taken(&self, coord: Coord) -> bool {
+	// Given a node's coordinate, check if it has any taken edges (signifying that the node itself is taken)
+	pub fn is_tree_node_taken(&self, coord: Coord) -> bool {
 		for dir in Direction::each() {
 			if let Some(edge) = self.get_edge(coord, dir) {
 				if edge.is_taken() {
@@ -227,27 +245,31 @@ impl SpanningTree {
 		false
 	}
 
+	/// Starting from the snake's head and ending at the snake's food, follow the clockwise
+	/// stepping rules until we reach the food. Return the final path.
 	pub fn build_snake_path(&self, world: &SnakeWorld) -> Path {
 		let mut current = world.snake_head_coord();
 
 		let mut path = Path::new();
 		loop {
 			if let Some(Cell::Food) = world.get_cell(current) {
+				// If we reached the food, we're done
 				break;
 			}
 
 			let [clockwise, out] = get_valid_dirs_from_coord(current);
 
 			let (coord, dir) = calculate_following_out_edge(current);
-
 			let out_edge = self.get_edge(coord, dir);
 
+			// If the outwards edge is taken then we go out, otherwise we can go clockwise
 			let next_dir = if let Some(&SpanTreeEdgeType::Wall) = out_edge {
 				out
 			} else {
 				clockwise
 			};
 
+			// Navigate towards the chosen direction
 			current = current.go_towards(next_dir);
 			path.push(next_dir);
 		}
@@ -255,6 +277,8 @@ impl SpanningTree {
 		path
 	}
 
+	/// Convert the minimum spanning tree into a collision grid. This was used in the past to
+	/// trace the snake path, but now it's just used for debugging and rendering the overlay easier.
 	pub fn build_collision_grid_from_walls(&self) -> GridGraph<bool> {
 		let mut snake_grid = GridGraph::new(self.size() * 2, false);
 
