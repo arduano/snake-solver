@@ -29,11 +29,13 @@ pub struct Edge {
 impl SnakeSolver for RandomSpanningTreeSolver {
 	fn get_next_path(&mut self, world: &crate::snake::SnakeWorld) -> Path {
 
+		// Generate the graph over every second grid square with minimum weights
+		// Then convert those edges into a MST
+		// And convert that MST into a collision space
 		let grid = match self.prev_grid.take() {
 			None => generate_grid_network(world, generate_edges(world)),
 			Some(grid) => grid
 		};
-
 
 		let path = build_path_from_collision_grid(&grid, world);
 		self.prev_grid = Some(grid);
@@ -41,6 +43,8 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		return path;
 	}
 
+
+	// UI code for drawing the collision grid
 	fn decorate_widget<'a>(&'a self, widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
 		if let Some(prev_grid) = &self.prev_grid {
 			widget.with_bools_edges_grid_overlay(
@@ -53,10 +57,13 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 	}
 }
 
+
+// Generate all of the random edges for a given world
 fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 	let _food = world.food_coord();
 
 	// Create a random directed graph of edges
+	// Connecting every second square to it's direct neighbour (not diagonally)
 	let mut edges = Vec::<Edge>::new();
 	for x in (1..world.size() - 1).step_by(2) {
 		for y in (1..world.size() - 1).step_by(2) {
@@ -73,6 +80,8 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 		}
 	}
 
+	// Add the missing edges to the bottom right node
+	// Because the above loop omitted them for simplicity
 	let size = world.size();
 	edges.push(Edge {
 		a: Coord::new_usize(size-1, size - 3),
@@ -85,6 +94,7 @@ fn generate_edges(world: &crate::snake::SnakeWorld) -> Vec<Edge> {
 		weight: rand::random::<f32>()
 	});
 
+	// Sort the edges by weight for the later MST calculations
 	edges.sort_by(|a, b| a.weight.partial_cmp(&b.weight).unwrap());
 
 	return edges;
@@ -97,6 +107,10 @@ fn generate_grid_network(
 	let food = world.food_coord();
 
 	// Generate the minimum spanning tree from edges
+	//   Instead of generating the tree structure completely
+	//   It is only partially generated as it will be converted into a collision GridGraph anyway
+	//   Thus we only store the necessary information to continue building a valid MST
+	//     rather than enough to store it
 	let mut visited = Vec::<Coord>::new();
 	let mut grid = GridGraph::<bool>::new(world.size() as usize, false);
 
@@ -119,7 +133,6 @@ fn generate_grid_network(
 			// If the connection between these two nodes already exists
 			// Remove this option as a shorter path has already been taken
 			if has_a && has_b {
-				// remove edge
 				edges.remove(i);
 				updated = true;
 				continue;
@@ -139,12 +152,14 @@ fn generate_grid_network(
 				}
 
 				// Swap the edge direction to point existing -> new
+				//   as the graph is non-directed
 				if !has_a && has_b {
 					let t = wall.a;
 					wall.a = wall.b;
 					wall.b = t;
 				}
 
+				// Convert from the graph coordinates to grid coordinates
 				let vertical = wall.a.y != wall.b.y;
 				let mut pos =
 					Coord::new_i32(i32::min(wall.a.x, wall.b.x), i32::min(wall.a.y, wall.b.y));
@@ -153,15 +168,16 @@ fn generate_grid_network(
 				} else {
 					pos.y -= 1;
 				}
-
+				// Update the collision grid to handle this edge
 				set_grid_edge(&mut grid, pos, vertical);
 
+				// As each graph node spans two grid points
+				//  The second half of the edge needs to be added
 				if vertical {
 					pos.y += 1;
 				} else {
 					pos.x += 1;
 				}
-
 				set_grid_edge(&mut grid, pos, vertical);
 
 				updated = true;
