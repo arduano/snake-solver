@@ -6,6 +6,7 @@ use crate::{
 	Coord,
 };
 
+/// Return the valid directions around a node's 2x2 grid. First value is clockwise, second is outwards.
 pub fn get_valid_dirs_from_coord(coord: Coord) -> [Direction; 2] {
 	let twos_coords = [coord.x % 2, coord.y % 2];
 	let [clockwise, out] = match twos_coords {
@@ -19,6 +20,7 @@ pub fn get_valid_dirs_from_coord(coord: Coord) -> [Direction; 2] {
 	[clockwise, out]
 }
 
+/// Build a snake path from a boolean collision grid, starting from the snake head until it reaches the food.
 pub fn build_path_from_collision_grid(grid: &GridGraph<bool>, world: &SnakeWorld) -> Path {
 	let mut current = world.snake_head_coord();
 

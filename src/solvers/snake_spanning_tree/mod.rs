@@ -51,20 +51,30 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 			.pathfinding_grid
 			.get_or_insert_with(|| PathfindingGrid::new(world.size()));
 
+		// Clear them just in case after fetching
 		spanning_tree.clear();
 		pathfinding_grid.clear();
 
+		// Step 1: Trace the snake into the spanning tree
 		spanning_tree.trace_current_snake_and_mark_edges(&world);
+
+		// Step 2: Fill the pathfinding grid from the spanning tree
 		pathfinding_grid.fill_pathfinding_grid(world, spanning_tree);
+
+		// Step 3: Pathfind through the grid, extending the tree
 		let pathfind_result = pathfinding::pathfind_on_spanning_tree(
 			world.snake_head_coord(),
 			pathfinding_grid,
 			spanning_tree,
 		);
 
+		// Process the pathfind result. Theoretically a dead end can never be reached,
+		// but we handle it just in case.
 		match pathfind_result {
 			SnakePathfindResult::Success => {}
 			SnakePathfindResult::ReachedDeadEnd => {
+				// Theoretically this can't be reached, but we handle it just in case.
+
 				println!("Reached dead end while pathfinding");
 				println!("Pathfinding failed, returning a killing path");
 
@@ -81,10 +91,13 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 			}
 		}
 
+		// Step 4: Grow the spanning tree to fill the remaining space
 		let grow_result = spanning_tree.grow_spanning_tree();
 
+		// Step 5: Trace the spanning tree to create the snake path
 		let path = spanning_tree.build_snake_path(&world);
 
+		// Handle the growth result. We choose different step counts depending on the result and the jitter setting.
 		let take = match grow_result {
 			SnakeGrowResult::Success => {
 				if let JitterKind::JitterWhenIndirect(num) = self.jitter_setting {
@@ -100,6 +113,7 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 			},
 		};
 
+		// Shorten the path if necessary
 		let path = if let Some(take) = take {
 			let mut clipped_path = Path::new();
 
@@ -115,6 +129,7 @@ impl SnakeSolver for SnakeSpanningTreeSolver {
 		path
 	}
 
+	// UI function to decorate the widget with pathfinding metadata
 	fn decorate_widget<'a>(&'a self, mut widget: SnakeWorldViewer<'a>) -> SnakeWorldViewer<'a> {
 		if let Some(tree) = &self.spanning_tree {
 			widget = widget.with_bools_edges_grid_overlay(
