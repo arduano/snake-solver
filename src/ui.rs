@@ -75,31 +75,26 @@ impl Widget for SnakeWorldViewer<'_> {
 		if let Some(pathfinding) = self.pathfinding_grid {
 			// Find the maximum value
 			let mut max_value = 0;
-			for x in 0..pathfinding.size() {
-				for y in 0..pathfinding.size() {
-					let value = pathfinding.get(Coord::new(x, y)).unwrap();
-					if *value > max_value {
-						max_value = *value;
-					}
+			for coord in pathfinding.iter_all_coords() {
+				let value = pathfinding.get(coord).unwrap();
+				if *value > max_value {
+					max_value = *value;
 				}
 			}
 
 			// Draw rectangles
-			for x in 0..pathfinding.size() {
-				for y in 0..pathfinding.size() {
-					let value = pathfinding.get(Coord::new(x, y)).unwrap();
-					let color = egui::Color32::from_rgb(
-						(255.0 * (*value as f32 / max_value as f32)) as u8,
-						0,
-						0,
-					);
-					let coord = Coord::new(x, y);
-					let rect = egui::Rect::from_min_size(
-						get_coord_vec2(coord),
-						egui::vec2(CELL_SIZE, CELL_SIZE),
-					);
-					mesh.add_colored_rect(rect, color);
-				}
+			for coord in pathfinding.iter_all_coords() {
+				let value = pathfinding.get(coord).unwrap();
+				let color = egui::Color32::from_rgb(
+					(255.0 * (*value as f32 / max_value as f32)) as u8,
+					0,
+					0,
+				);
+				let rect = egui::Rect::from_min_size(
+					get_coord_vec2(coord),
+					egui::vec2(CELL_SIZE, CELL_SIZE),
+				);
+				mesh.add_colored_rect(rect, color);
 			}
 		}
 
@@ -180,28 +175,25 @@ impl Widget for SnakeWorldViewer<'_> {
 		}
 
 		for (bools_edges_grid, color) in self.bools_edges_grid.iter() {
-			for x in 0..bools_edges_grid.size() {
-				for y in 0..bools_edges_grid.size() {
-					let coord = Coord::new(x, y);
-					for dir in [Direction::Right, Direction::Down].into_iter() {
-						if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
-							let start = coord.go_towards(dir);
+			for coord in bools_edges_grid.iter_all_coords() {
+				for dir in [Direction::Right, Direction::Down].into_iter() {
+					if bools_edges_grid.get_edge(coord, dir) == Some(&true) {
+						let start = coord.go_towards(dir);
 
-							let next_dir = match dir {
-								Direction::Right => dir.rotate_right(),
-								Direction::Down => dir.rotate_left(),
-								_ => unreachable!(),
-							};
+						let next_dir = match dir {
+							Direction::Right => dir.rotate_right(),
+							Direction::Down => dir.rotate_left(),
+							_ => unreachable!(),
+						};
 
-							let end = start.go_towards(next_dir);
+						let end = start.go_towards(next_dir);
 
-							let start = get_coord_vec2(start);
-							let end = get_coord_vec2(end);
-							painter.add(egui::Shape::line_segment(
-								[start, end],
-								egui::Stroke::new(1.0, *color),
-							));
-						}
+						let start = get_coord_vec2(start);
+						let end = get_coord_vec2(end);
+						painter.add(egui::Shape::line_segment(
+							[start, end],
+							egui::Stroke::new(1.0, *color),
+						));
 					}
 				}
 			}

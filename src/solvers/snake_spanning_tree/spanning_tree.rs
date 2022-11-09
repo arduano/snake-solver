@@ -85,30 +85,26 @@ impl SpanningTree {
 
 		// Seed the tree from here
 		'iter: loop {
-			for x in 0..self.size() {
-				for y in 0..self.size() {
-					let coord = Coord::new(x, y);
-					if !self.is_tree_coord_taken(coord) {
-						continue;
-					}
+			for coord in self.iter_all_coords() {
+				if !self.is_tree_coord_taken(coord) {
+					continue;
+				}
 
-					for dir in Direction::each() {
-						if let Some(&edge) = self.get_edge(coord, dir) {
-							use SpanTreeEdgeType::*;
-							let free =
-								edge == Free || (allow_covered && edge == CoveredByFutureSnake);
+				for dir in Direction::each() {
+					if let Some(&edge) = self.get_edge(coord, dir) {
+						use SpanTreeEdgeType::*;
+						let free = edge == Free || (allow_covered && edge == CoveredByFutureSnake);
 
-							if free {
-								let seed_coord = coord.go_towards(dir);
-								if !self.is_tree_coord_taken(seed_coord) {
-									self.seed_tree_from(coord, dir);
+						if free {
+							let seed_coord = coord.go_towards(dir);
+							if !self.is_tree_coord_taken(seed_coord) {
+								self.seed_tree_from(coord, dir);
 
-									if allow_covered {
-										seeded_covered_edge = true;
-									}
-
-									continue 'iter;
+								if allow_covered {
+									seeded_covered_edge = true;
 								}
+
+								continue 'iter;
 							}
 						}
 					}
@@ -280,12 +276,10 @@ impl SpanningTree {
 			snake_grid.set_edge(pos, left, true);
 		};
 
-		for x in 0..self.size() {
-			for y in 0..self.size() {
-				for dir in Direction::each() {
-					if self.get_edge(Coord::new(x, y), dir) == Some(&SpanTreeEdgeType::Wall) {
-						set_snake_grid_edge(Coord::new(x, y), dir);
-					}
+		for coord in self.iter_all_coords() {
+			for dir in Direction::each() {
+				if self.get_edge(coord, dir) == Some(&SpanTreeEdgeType::Wall) {
+					set_snake_grid_edge(coord, dir);
 				}
 			}
 		}

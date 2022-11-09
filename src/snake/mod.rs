@@ -90,16 +90,12 @@ impl SnakeWorld {
 	}
 
 	fn cull_tail(&mut self) {
-		// TODO: Optimize this
-		for x in 0..self.cells.size() {
-			for y in 0..self.cells.size() {
-				let coord = Coord::new(x, y);
-				if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
-					if *iteration > 0 {
-						self.cells.set(coord, Cell::Snake(iteration - 1));
-					} else {
-						self.cells.set(coord, Cell::Empty);
-					}
+		for coord in self.cells.iter_all_coords() {
+			if let Some(Cell::Snake(iteration)) = self.cells.get(coord) {
+				if *iteration > 0 {
+					self.cells.set(coord, Cell::Snake(iteration - 1));
+				} else {
+					self.cells.set(coord, Cell::Empty);
 				}
 			}
 		}
@@ -125,12 +121,9 @@ impl SnakeWorld {
 		} else {
 			// If less than an eighth of the grid is empty, iterate through all cells until empty cell found
 			let mut cells = Vec::new();
-			for x in 0..self.cells.size() {
-				for y in 0..self.cells.size() {
-					let coord = Coord::new(x, y);
-					if self.cells.get(coord) == Some(&Cell::Empty) {
-						cells.push(coord);
-					}
+			for coord in self.cells.iter_all_coords() {
+				if self.cells.get(coord) == Some(&Cell::Empty) {
+					cells.push(coord);
 				}
 			}
 
