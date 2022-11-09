@@ -8,7 +8,7 @@ use crate::{
 	Coord, Offset,
 };
 
-use super::SnakeSolver;
+use super::{SnakeSolver, utils::build_path_from_collision_grid};
 
 pub struct RandomSpanningTreeSolver {
 	pub prev_grid: Option<GridGraph<bool>>,
@@ -35,7 +35,7 @@ impl SnakeSolver for RandomSpanningTreeSolver {
 		};
 
 
-		let path = generate_path(world, &grid);
+		let path = build_path_from_collision_grid(&grid, world);
 		self.prev_grid = Some(grid);
 
 		return path;
@@ -176,83 +176,6 @@ fn generate_grid_network(
 	return grid;
 }
 
-fn generate_path(world: &crate::snake::SnakeWorld, grid: &GridGraph<bool>) -> Path {
-	// Find path
-	let mut path = Path::new();
-	let start = world.snake_head_coord();
-	let mut pos = world.snake_head_coord();
-	let mut dir = match world.prev_direction() {
-		Some(v) => v,
-		None => {
-			if grid.get_edge(pos, Direction::Right) == Some(&true) {
-				Direction::Up
-			} else if grid.get_edge(pos, Direction::Down) == Some(&true) {
-				Direction::Right
-			} else {
-				Direction::Right
-			}
-		}
-	};
-
-	let mut max = world.size() * world.size();
-	let mut trailing = false;
-	let mut first = true;
-	loop {
-		if (!first && pos == start) {
-			break;
-		}
-		first = false;
-
-		let right = dir.rotate_right();
-		if grid.get_edge(pos, dir) == None {
-			dir = dir.rotate_right();
-		} else if grid.get_edge(pos, right) == Some(&true) {
-			if grid.get_edge(pos, dir) == Some(&true) {
-				dir = dir.rotate_left();
-			}
-			trailing = true;
-		} else if grid.get_edge(pos, dir) == Some(&true) {
-			dir = dir.rotate_left();
-		} else {
-			if trailing {
-				dir = dir.rotate_right();
-			} else {
-				let nx = pos + Offset::from_direction(dir);
-				if let Some(&Cell::Snake(_)) = world.get_cell(nx) {
-					dir = dir.rotate_right();
-				}
-
-				let nx = pos + Offset::from_direction(dir);
-				if let Some(&Cell::Snake(_)) = world.get_cell(nx) {
-					dir = dir.rotate_left().rotate_left();
-				}
-
-				trailing = false;
-			}
-		}
-
-		pos = pos + Offset::from_direction(dir);
-		path.push(dir);
-
-		max -= 1;
-		if max == 0 {
-			break;
-		}
-	}
-
-	return path;
-}
-
-fn check_obstruction(world: &crate::snake::SnakeWorld, pos: Coord, head: Coord) -> bool {
-	if pos == head {
-		return true;
-	}
-
-	return match world.get_cell(pos) {
-		Some(Cell::Snake(_)) => true,
-		_ => false,
-	};
-}
 
 fn set_grid_edge(grid: &mut GridGraph<bool>, pos: Coord, vertical: bool) {
 	grid.try_set_edge(
