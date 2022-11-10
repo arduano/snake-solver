@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 pub use crate::path::*;
 
 use crate::{
@@ -19,7 +17,6 @@ pub struct AutoSnakePlayer<S: SnakeSolver> {
 	current_path: Path,
 	state: AutoPlayerState,
 	pub solver: S,
-	_s: PhantomData<S>,
 }
 
 impl<S: SnakeSolver> AutoSnakePlayer<S> {
@@ -31,7 +28,6 @@ impl<S: SnakeSolver> AutoSnakePlayer<S> {
 			current_path: initial_path,
 			state: AutoPlayerState::Playing,
 			solver,
-			_s: PhantomData,
 		}
 	}
 
