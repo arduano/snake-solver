@@ -86,8 +86,8 @@ pub fn main() {
 	];
 
 	let starting_size: usize = 10;
-	let up_to: usize = 60;
-	let run_count: usize = 10;
+	let up_to: usize = 70;
+	let run_count: usize = 20;
 
 	let all_sizes = (starting_size..=up_to).step_by(2).collect::<Vec<_>>();
 
