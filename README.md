@@ -6,10 +6,14 @@ It relies on some newer rust compiler features, so make sure you run `rustup upd
 
 To run the showcase script, run:
 
-```bash cargo run --release --example showcase```
+`bash cargo run --release --example showcase`
 
 ## Notable files
 
 The snake game implementation is located in `src/snake/mod.rs`.
 
 The snake solvers are in `src/solvers`, there are 3 main solvers: `basic` which is zigzag, `random_spanning_tree` which is static hamiltonian and `snake_spanning_tree` which is dynamic pathfinding hamiltonian.
+
+## Report
+
+The report for this assignment is located in `report.pdf`

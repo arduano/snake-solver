@@ -9,7 +9,7 @@ use snake_solver::{
 
 use eframe::egui::{self};
 
-const GRID_SIZE: i32 = 40;
+const GRID_SIZE: i32 = 80;
 
 fn main() {
 	let width: f32 = SnakeWorldViewer::calculate_size_for_world_size(GRID_SIZE as usize) + 20.0;
@@ -26,7 +26,7 @@ fn main() {
 		options,
 		Box::new(|_cc| {
 			Box::new(MyApp::new(SnakeSpanningTreeSolver::new(
-				JitterKind::JitterWhenIndirect(1),
+				JitterKind::JitterAlways(1),
 			)))
 		}),
 	);
